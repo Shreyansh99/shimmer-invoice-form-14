@@ -10,7 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import { jsPDF } from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import type { PrescriptionData } from "@/types/prescription";
 
 const Invoices = () => {
@@ -104,7 +104,7 @@ const Invoices = () => {
       prescription.mobile_number || ''
     ]);
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       head: [['Reg No', 'Date', 'Name', 'Age', 'Gender', 'Department', 'Type', 'Address', 'Aadhar', 'Mobile']],
       body: tableData,
       startY: 50,
