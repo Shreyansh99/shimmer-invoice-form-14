@@ -9,7 +9,7 @@ import { Download, Search, FileSpreadsheet, FileText, Loader2, Database } from "
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 import type { PrescriptionData } from "@/types/prescription";
 
