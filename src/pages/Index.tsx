@@ -22,7 +22,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-medical-blue/5 py-8 px-4">
+    <div className="min-h-screen bg-white py-8 px-4">
       <div className="container mx-auto">
         {currentPrescription && !isEditing ? (
           <PrescriptionTemplate 
