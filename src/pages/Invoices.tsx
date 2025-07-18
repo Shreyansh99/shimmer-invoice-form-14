@@ -160,36 +160,36 @@ const Invoices = () => {
             />
             
             <div className="flex flex-wrap gap-4">
-              <Select value={genderFilter} onValueChange={setGenderFilter}>
+              <Select value={genderFilter} onValueChange={(value) => setGenderFilter(value === "all-genders" ? "" : value)}>
                 <SelectTrigger className="w-[180px] border-border/60 focus:border-medical-blue">
                   <SelectValue placeholder="All Genders" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Genders</SelectItem>
+                  <SelectItem value="all-genders">All Genders</SelectItem>
                   <SelectItem value="male">Male</SelectItem>
                   <SelectItem value="female">Female</SelectItem>
                   <SelectItem value="others">Others</SelectItem>
                 </SelectContent>
               </Select>
 
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value === "all-types" ? "" : value)}>
                 <SelectTrigger className="w-[180px] border-border/60 focus:border-medical-blue">
                   <SelectValue placeholder="All Types" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="all-types">All Types</SelectItem>
                   <SelectItem value="ANC">ANC</SelectItem>
                   <SelectItem value="General">General</SelectItem>
                   <SelectItem value="JSSK">JSSK</SelectItem>
                 </SelectContent>
               </Select>
 
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+              <Select value={departmentFilter} onValueChange={(value) => setDepartmentFilter(value === "all-departments" ? "" : value)}>
                 <SelectTrigger className="w-[200px] border-border/60 focus:border-medical-blue">
                   <SelectValue placeholder="All Departments" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Departments</SelectItem>
+                  <SelectItem value="all-departments">All Departments</SelectItem>
                   {departments.map((dept) => (
                     <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                   ))}
