@@ -1,412 +1,273 @@
-import { useState, useMemo } from "react";
-import { Button } from "@/components/ui/button";
+import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Download, FileText, Search, RotateCcw } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Download, Search, FileSpreadsheet, FileText, Loader2, Database } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-
-interface InvoiceData {
-  registrationNumber: number;
-  dateTime: string;
-  name: string;
-  age: number;
-  roomNo: number;
-  address: string;
-  gender: string;
-  department: string;
-  type: string;
-}
-
-// Mock data - replace with actual database fetch
-const mockInvoices: InvoiceData[] = [
-  {
-    registrationNumber: 1001,
-    dateTime: "2024-01-15 10:30:00",
-    name: "John Doe",
-    age: 35,
-    roomNo: 101,
-    address: "123 Main St",
-    gender: "Male",
-    department: "Cardiology",
-    type: "Consultation"
-  },
-  {
-    registrationNumber: 1002,
-    dateTime: "2024-01-15 11:45:00",
-    name: "Jane Smith",
-    age: 28,
-    roomNo: 102,
-    address: "456 Oak Ave",
-    gender: "Female",
-    department: "Neurology",
-    type: "Surgery"
-  },
-  {
-    registrationNumber: 1003,
-    dateTime: "2024-01-16 09:15:00",
-    name: "Bob Johnson",
-    age: 42,
-    roomNo: 103,
-    address: "789 Pine St",
-    gender: "Male",
-    department: "Orthopedics",
-    type: "Follow-up"
-  },
-  {
-    registrationNumber: 1004,
-    dateTime: "2024-01-16 14:20:00",
-    name: "Alice Wilson",
-    age: 31,
-    roomNo: 104,
-    address: "321 Elm Dr",
-    gender: "Female",
-    department: "Cardiology",
-    type: "Emergency"
-  },
-  {
-    registrationNumber: 1005,
-    dateTime: "2024-01-17 08:00:00",
-    name: "Charlie Brown",
-    age: 55,
-    roomNo: 105,
-    address: "654 Maple Rd",
-    gender: "Male",
-    department: "Neurology",
-    type: "Consultation"
-  }
-];
+import type { PrescriptionData } from "@/types/prescription";
 
 const Invoices = () => {
-  const { toast } = useToast();
-  const [invoices] = useState<InvoiceData[]>(mockInvoices);
+  const [prescriptions, setPrescriptions] = useState<PrescriptionData[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [genderFilter, setGenderFilter] = useState<string>("all");
-  const [typeFilter, setTypeFilter] = useState<string>("all");
-  const [departmentFilter, setDepartmentFilter] = useState<string>("all");
+  const [genderFilter, setGenderFilter] = useState<string>("");
+  const [typeFilter, setTypeFilter] = useState<string>("");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("");
+  const { toast } = useToast();
 
-  // Filter data based on search and filters
-  const filteredInvoices = useMemo(() => {
-    return invoices.filter((invoice) => {
-      const matchesSearch = searchTerm === "" || 
-        invoice.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        invoice.registrationNumber.toString().includes(searchTerm) ||
-        invoice.address.toLowerCase().includes(searchTerm.toLowerCase());
+  useEffect(() => {
+    fetchPrescriptions();
+  }, []);
+
+  const fetchPrescriptions = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('prescriptions')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      setPrescriptions((data || []) as PrescriptionData[]);
+    } catch (error) {
+      console.error('Error fetching prescriptions:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch prescriptions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const filteredPrescriptions = useMemo(() => {
+    return prescriptions.filter(prescription => {
+      const matchesSearch = prescription.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           prescription.registration_number.toString().includes(searchTerm);
+      const matchesGender = !genderFilter || prescription.gender === genderFilter;
+      const matchesType = !typeFilter || prescription.type === typeFilter;
+      const matchesDepartment = !departmentFilter || prescription.department === departmentFilter;
       
-      const matchesGender = genderFilter === "all" || invoice.gender === genderFilter;
-      const matchesType = typeFilter === "all" || invoice.type === typeFilter;
-      const matchesDepartment = departmentFilter === "all" || invoice.department === departmentFilter;
-
       return matchesSearch && matchesGender && matchesType && matchesDepartment;
     });
-  }, [invoices, searchTerm, genderFilter, typeFilter, departmentFilter]);
+  }, [prescriptions, searchTerm, genderFilter, typeFilter, departmentFilter]);
 
-  // Get unique values for filter options
-  const genderOptions = [...new Set(invoices.map(inv => inv.gender))];
-  const typeOptions = [...new Set(invoices.map(inv => inv.type))];
-  const departmentOptions = [...new Set(invoices.map(inv => inv.department))];
-
-  // Reset all filters
-  const resetFilters = () => {
-    setSearchTerm("");
-    setGenderFilter("all");
-    setTypeFilter("all");
-    setDepartmentFilter("all");
-    toast({
-      title: "Filters Reset",
-      description: "All filters have been cleared.",
-    });
-  };
-
-  // Export to Excel
   const exportToExcel = () => {
-    try {
-      const worksheet = XLSX.utils.json_to_sheet(filteredInvoices);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Invoices");
-      
-      // Style the header
-      const headerRange = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-      for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
-        if (!worksheet[cellAddress]) continue;
-        worksheet[cellAddress].s = {
-          font: { bold: true },
-          fill: { fgColor: { rgb: "CCCCCC" } }
-        };
-      }
-      
-      XLSX.writeFile(workbook, `invoices_${new Date().toISOString().split('T')[0]}.xlsx`);
-      toast({
-        title: "Export Successful",
-        description: `${filteredInvoices.length} records exported to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "There was an error exporting to Excel.",
-        variant: "destructive",
-      });
-    }
+    const worksheet = XLSX.utils.json_to_sheet(filteredPrescriptions.map(prescription => ({
+      'Registration Number': prescription.registration_number,
+      'Date & Time': new Date(prescription.created_at).toLocaleString(),
+      'Name': prescription.name,
+      'Age': prescription.age,
+      'Gender': prescription.gender,
+      'Department': prescription.department,
+      'Type': prescription.type,
+      'Address': prescription.address || '',
+      'Aadhar Number': prescription.aadhar_number || '',
+      'Mobile Number': prescription.mobile_number || ''
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Prescriptions");
+    XLSX.writeFile(workbook, `prescriptions_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
 
-  // Export to PDF
   const exportToPDF = () => {
-    try {
-      const doc = new jsPDF();
-      
-      // Add title
-      doc.setFontSize(18);
-      doc.text('Invoice Reports', 20, 20);
-      
-      // Add export date
-      doc.setFontSize(10);
-      doc.text(`Export Date: ${new Date().toLocaleDateString()}`, 20, 30);
-      doc.text(`Total Records: ${filteredInvoices.length}`, 20, 35);
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(20);
+    doc.text('Prescription Report', 20, 20);
+    
+    // Add generation date
+    doc.setFontSize(12);
+    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 35);
+    
+    // Prepare table data
+    const tableData = filteredPrescriptions.map(prescription => [
+      prescription.registration_number,
+      new Date(prescription.created_at).toLocaleDateString(),
+      prescription.name,
+      prescription.age,
+      prescription.gender,
+      prescription.department,
+      prescription.type,
+      prescription.address || '',
+      prescription.aadhar_number || '',
+      prescription.mobile_number || ''
+    ]);
 
-      // Prepare table data
-      const tableHeaders = [
-        'Reg No', 'Date/Time', 'Name', 'Age', 'Room', 'Gender', 'Department', 'Type'
-      ];
-      
-      const tableData = filteredInvoices.map(invoice => [
-        invoice.registrationNumber,
-        invoice.dateTime,
-        invoice.name,
-        invoice.age,
-        invoice.roomNo,
-        invoice.gender,
-        invoice.department,
-        invoice.type
-      ]);
+    (doc as any).autoTable({
+      head: [['Reg No', 'Date', 'Name', 'Age', 'Gender', 'Department', 'Type', 'Address', 'Aadhar', 'Mobile']],
+      body: tableData,
+      startY: 50,
+    });
 
-      // Add table
-      (doc as any).autoTable({
-        head: [tableHeaders],
-        body: tableData,
-        startY: 45,
-        styles: { fontSize: 8 },
-        headStyles: { fillColor: [66, 139, 202] },
-        alternateRowStyles: { fillColor: [245, 245, 245] },
-      });
+    doc.save(`prescriptions_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
 
-      doc.save(`invoices_${new Date().toISOString().split('T')[0]}.pdf`);
-      toast({
-        title: "Export Successful",
-        description: `${filteredInvoices.length} records exported to PDF.`,
-      });
-    } catch (error) {
-      toast({
-        title: "Export Failed",
-        description: "There was an error exporting to PDF.",
-        variant: "destructive",
-      });
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'ANC': return 'bg-green-100 text-green-800 border-green-200';
+      case 'General': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'JSSK': return 'bg-purple-100 text-purple-800 border-purple-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
+
+  const departments = Array.from(new Set(prescriptions.map(p => p.department))).sort();
+
+  if (loading) {
+    return (
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center space-y-4">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto text-medical-blue" />
+            <p className="text-medical-gray">Loading prescriptions...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-blue-50/30 py-8 px-4">
-      <div className="container mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-foreground mb-2">Invoice Management</h1>
-          <p className="text-muted-foreground">View, filter, and export invoice data</p>
-        </div>
+    <div className="container mx-auto py-8 px-4">
+      <Card className="shadow-lg border-border/40">
+        <CardHeader className="bg-gradient-to-r from-medical-blue/5 to-medical-blue-light/5 border-b border-border/40">
+          <div className="flex items-center gap-2">
+            <Database className="h-6 w-6 text-medical-blue" />
+            <CardTitle className="text-2xl font-bold text-medical-dark">Prescription Management</CardTitle>
+          </div>
+          <CardDescription className="text-medical-gray">
+            Search, filter, and export prescription data
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="p-6">
+          <div className="flex flex-col gap-4 mb-6">
+            <Input
+              placeholder="Search by name or registration number..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md border-border/60 focus:border-medical-blue"
+            />
+            
+            <div className="flex flex-wrap gap-4">
+              <Select value={genderFilter} onValueChange={setGenderFilter}>
+                <SelectTrigger className="w-[180px] border-border/60 focus:border-medical-blue">
+                  <SelectValue placeholder="All Genders" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Genders</SelectItem>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="others">Others</SelectItem>
+                </SelectContent>
+              </Select>
 
-        {/* Filters Card */}
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Search className="h-5 w-5" />
-              Search & Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              {/* Search Input */}
-              <div className="lg:col-span-1">
-                <Input
-                  placeholder="Search by name, ID, or address..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full"
-                />
-              </div>
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[180px] border-border/60 focus:border-medical-blue">
+                  <SelectValue placeholder="All Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Types</SelectItem>
+                  <SelectItem value="ANC">ANC</SelectItem>
+                  <SelectItem value="General">General</SelectItem>
+                  <SelectItem value="JSSK">JSSK</SelectItem>
+                </SelectContent>
+              </Select>
 
-              {/* Gender Filter */}
-              <div>
-                <Select value={genderFilter} onValueChange={setGenderFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by Gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Genders</SelectItem>
-                    {genderOptions.map((gender) => (
-                      <SelectItem key={gender} value={gender}>
-                        {gender}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Type Filter */}
-              <div>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    {typeOptions.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Department Filter */}
-              <div>
-                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Filter by Department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Departments</SelectItem>
-                    {departmentOptions.map((department) => (
-                      <SelectItem key={department} value={department}>
-                        {department}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* Reset Button */}
-              <div>
-                <Button 
-                  variant="outline" 
-                  onClick={resetFilters}
-                  className="w-full"
-                >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  Reset
-                </Button>
-              </div>
+              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                <SelectTrigger className="w-[200px] border-border/60 focus:border-medical-blue">
+                  <SelectValue placeholder="All Departments" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">All Departments</SelectItem>
+                  {departments.map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-          </CardContent>
-        </Card>
+            
+            <div className="flex gap-3">
+              <Button
+                onClick={exportToExcel}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                <FileSpreadsheet className="w-4 h-4 mr-2" />
+                Export Excel
+              </Button>
+              
+              <Button
+                onClick={exportToPDF}
+                className="bg-red-600 hover:bg-red-700 text-white"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Export PDF
+              </Button>
+            </div>
+          </div>
 
-        {/* Export Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="flex-1">
-            <p className="text-sm text-muted-foreground">
-              Showing {filteredInvoices.length} of {invoices.length} records
+          <div className="text-center p-8">
+            <p className="text-lg text-medical-gray mb-4">
+              Showing {filteredPrescriptions.length} of {prescriptions.length} prescriptions
             </p>
           </div>
-          <div className="flex gap-2">
-            <Button onClick={exportToExcel} variant="outline">
-              <Download className="h-4 w-4 mr-2" />
-              Export Excel
-            </Button>
-            <Button onClick={exportToPDF} variant="outline">
-              <FileText className="h-4 w-4 mr-2" />
-              Export PDF
-            </Button>
-          </div>
-        </div>
 
-        {/* Data Table */}
-        <Card>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Reg No</TableHead>
-                    <TableHead>Date/Time</TableHead>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Age</TableHead>
-                    <TableHead>Room</TableHead>
-                    <TableHead>Address</TableHead>
-                    <TableHead>Gender</TableHead>
-                    <TableHead>Department</TableHead>
-                    <TableHead>Type</TableHead>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-border/40">
+                  <TableHead className="text-medical-dark font-semibold">Reg. No.</TableHead>
+                  <TableHead className="text-medical-dark font-semibold">Date & Time</TableHead>
+                  <TableHead className="text-medical-dark font-semibold">Name</TableHead>
+                  <TableHead className="text-medical-dark font-semibold">Age</TableHead>
+                  <TableHead className="text-medical-dark font-semibold">Gender</TableHead>
+                  <TableHead className="text-medical-dark font-semibold">Department</TableHead>
+                  <TableHead className="text-medical-dark font-semibold">Type</TableHead>
+                  <TableHead className="text-medical-dark font-semibold">Mobile</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredPrescriptions.map((prescription) => (
+                  <TableRow key={prescription.id} className="border-border/40 hover:bg-muted/20">
+                    <TableCell className="font-medium text-medical-blue">
+                      #{prescription.registration_number}
+                    </TableCell>
+                    <TableCell className="text-medical-gray">
+                      {new Date(prescription.created_at).toLocaleString()}
+                    </TableCell>
+                    <TableCell className="font-medium text-medical-dark">{prescription.name}</TableCell>
+                    <TableCell className="text-medical-gray">{prescription.age}</TableCell>
+                    <TableCell className="capitalize text-medical-gray">{prescription.gender}</TableCell>
+                    <TableCell className="text-medical-gray">{prescription.department}</TableCell>
+                    <TableCell>
+                      <Badge className={getTypeColor(prescription.type)}>
+                        {prescription.type}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-medical-gray">{prescription.mobile_number || '-'}</TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredInvoices.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
-                        No invoices found matching your criteria.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    filteredInvoices.map((invoice) => (
-                      <TableRow key={invoice.registrationNumber}>
-                        <TableCell className="font-medium">
-                          {invoice.registrationNumber}
-                        </TableCell>
-                        <TableCell>{invoice.dateTime}</TableCell>
-                        <TableCell>{invoice.name}</TableCell>
-                        <TableCell>{invoice.age}</TableCell>
-                        <TableCell>{invoice.roomNo}</TableCell>
-                        <TableCell className="max-w-xs truncate">
-                          {invoice.address}
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            invoice.gender === 'Male' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-pink-100 text-pink-800'
-                          }`}>
-                            {invoice.gender}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            {invoice.department}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            invoice.type === 'Emergency' 
-                              ? 'bg-red-100 text-red-800'
-                              : invoice.type === 'Surgery'
-                              ? 'bg-purple-100 text-purple-800'
-                              : 'bg-gray-100 text-gray-800'
-                          }`}>
-                            {invoice.type}
-                          </span>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+
+          {filteredPrescriptions.length === 0 && (
+            <div className="text-center p-8">
+              <p className="text-medical-gray">No prescriptions found matching your criteria.</p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

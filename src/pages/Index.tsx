@@ -1,40 +1,37 @@
 import { useState } from "react";
-import { InvoiceForm } from "@/components/InvoiceForm";
-import { InvoiceSummary } from "@/components/InvoiceSummary";
-
-interface InvoiceData {
-  registrationNumber: number;
-  dateTime: string;
-  name: string;
-  age: number;
-  roomNo: number;
-  address: string;
-  gender: string;
-  department: string;
-  type: string;
-}
+import { PrescriptionForm } from "@/components/PrescriptionForm";
+import { PrescriptionTemplate } from "@/components/PrescriptionTemplate";
+import type { PrescriptionData } from "@/types/prescription";
 
 const Index = () => {
-  const [currentInvoice, setCurrentInvoice] = useState<InvoiceData | null>(null);
+  const [currentPrescription, setCurrentPrescription] = useState<PrescriptionData | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
 
-  const handleInvoiceSubmit = (data: InvoiceData) => {
-    setCurrentInvoice(data);
+  const handlePrescriptionSubmit = (data: PrescriptionData) => {
+    setCurrentPrescription(data);
+    setIsEditing(false);
   };
 
   const handleBackToForm = () => {
-    setCurrentInvoice(null);
+    setCurrentPrescription(null);
+    setIsEditing(false);
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-blue-50/30 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-medical-blue/5 py-8 px-4">
       <div className="container mx-auto">
-        {currentInvoice ? (
-          <InvoiceSummary 
-            invoiceData={currentInvoice} 
+        {currentPrescription && !isEditing ? (
+          <PrescriptionTemplate 
+            prescriptionData={currentPrescription} 
+            onEdit={handleEdit}
             onBack={handleBackToForm}
           />
         ) : (
-          <InvoiceForm onSubmit={handleInvoiceSubmit} />
+          <PrescriptionForm onSubmit={handlePrescriptionSubmit} />
         )}
       </div>
     </div>

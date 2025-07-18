@@ -14,7 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      prescriptions: {
+        Row: {
+          aadhar_number: string | null
+          address: string | null
+          age: number
+          created_at: string
+          department: string
+          gender: string
+          id: string
+          mobile_number: string | null
+          name: string
+          registration_number: number
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          aadhar_number?: string | null
+          address?: string | null
+          age: number
+          created_at?: string
+          department: string
+          gender: string
+          id?: string
+          mobile_number?: string | null
+          name: string
+          registration_number?: number
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          aadhar_number?: string | null
+          address?: string | null
+          age?: number
+          created_at?: string
+          department?: string
+          gender?: string
+          id?: string
+          mobile_number?: string | null
+          name?: string
+          registration_number?: number
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
