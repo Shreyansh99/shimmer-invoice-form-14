@@ -1,159 +1,228 @@
-import { useState, useMemo, useEffect } from "react";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Download, Search, FileSpreadsheet, FileText, Loader2, Database, RefreshCw } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import * as XLSX from 'xlsx';
-import { jsPDF } from 'jspdf';
-import autoTable from 'jspdf-autotable';
+import { Separator } from "@/components/ui/separator";
+import { Edit, Printer, ArrowLeft, Building2, Calendar, User, Phone, MapPin, CreditCard, Stethoscope } from "lucide-react";
 import type { PrescriptionData } from "@/types/prescription";
 
-const Prescriptions = () => {
-  const [prescriptions, setPrescriptions] = useState<PrescriptionData[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [genderFilter, setGenderFilter] = useState<string>("");
-  const [typeFilter, setTypeFilter] = useState<string>("");
-  const [departmentFilter, setDepartmentFilter] = useState<string>("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(10);
-  const { toast } = useToast();
+interface PrescriptionTemplateProps {
+  prescriptionData: PrescriptionData;
+  onBack: () => void;
+}
 
-  useEffect(() => {
-    fetchPrescriptions();
-  }, []);
-
-  const fetchPrescriptions = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('prescriptions')
-        .select('*')
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-
-      setPrescriptions((data || []) as PrescriptionData[]);
-      toast({
-        title: "Success",
-        description: "Prescriptions loaded successfully",
-      });
-    } catch (error) {
-      console.error('Error fetching prescriptions:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch prescriptions. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
+export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionTemplateProps) => {
+  const handlePrint = () => {
+    const printContent = document.getElementById('prescription-print-area');
+    if (printContent) {
+      const printWindow = window.open('', '', 'height=600,width=800');
+      if (printWindow) {
+        printWindow.document.write(`
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <title>Patient Prescription #${prescriptionData.registration_number}</title>
+              <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body {
+                  font-family: 'Arial', sans-serif;
+                  background: white;
+                  color: #000;
+                  max-width: 210mm;
+                  margin: 0 auto;
+                  padding: 15mm;
+                  line-height: 1.6;
+                  font-size: 12px;
+                }
+                .header {
+                  text-align: center;
+                  border-bottom: 2px solid #4F46E5;
+                  padding-bottom: 15px;
+                  margin-bottom: 20px;
+                }
+                .hospital-name {
+                  font-size: 20px;
+                  font-weight: bold;
+                  color: #4F46E5;
+                  margin-bottom: 5px;
+                }
+                .hospital-subtitle {
+                  font-size: 12px;
+                  color: #666;
+                  margin-bottom: 10px;
+                }
+                .prescription-title {
+                  font-size: 22px;
+                  font-weight: bold;
+                  color: #1a1a1a;
+                  margin-bottom: 8px;
+                }
+                .reg-info {
+                  display: flex;
+                  justify-content: space-between;
+                  margin-bottom: 15px;
+                  font-size: 12px;
+                }
+                .patient-info {
+                  display: grid;
+                  grid-template-columns: 1fr 1fr;
+                  gap: 15px;
+                  margin-bottom: 20px;
+                }
+                .info-section h3 {
+                  font-size: 14px;
+                  font-weight: bold;
+                  color: #4F46E5;
+                  margin-bottom: 8px;
+                  border-bottom: 1px solid #e5e7eb;
+                  padding-bottom: 3px;
+                }
+                .info-item {
+                  margin-bottom: 6px;
+                  font-size: 12px;
+                }
+                .info-label {
+                  font-weight: 600;
+                  color: #374151;
+                }
+                .prescription-area {
+                  min-height: 120px;
+                  border: 2px dashed #d1d5db;
+                  border-radius: 8px;
+                  padding: 15px;
+                  margin: 20px 0;
+                  background: #f9fafb;
+                }
+                .prescription-area h3 {
+                  color: #4F46E5;
+                  margin-bottom: 10px;
+                  font-size: 14px;
+                }
+                .footer {
+                  margin-top: 30px;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: end;
+                }
+                .signature-area {
+                  text-align: right;
+                }
+                .signature-line {
+                  width: 200px;
+                  border-bottom: 1px solid #000;
+                  margin-bottom: 5px;
+                  height: 40px;
+                }
+                .type-badge {
+                  display: inline-block;
+                  padding: 4px 12px;
+                  border-radius: 20px;
+                  font-size: 12px;
+                  font-weight: 600;
+                }
+                .type-anc { background: #dcfce7; color: #166534; }
+                .type-general { background: #dbeafe; color: #1e40af; }
+                .type-jssk { background: #e9d5ff; color: #7c3aed; }
+                @media print {
+                  body { margin: 0; padding: 15mm; }
+                }
+              </style>
+            </head>
+            <body>
+              <div class="header">
+                <div class="hospital-name">City General Hospital</div>
+                <div class="hospital-subtitle">Healthcare Excellence Since 1985</div>
+                <div class="prescription-title">PRESCRIPTION</div>
+              </div>
+              
+              <div class="reg-info">
+                <div><strong>Registration No:</strong> #${prescriptionData.registration_number}</div>
+                <div><strong>Date:</strong> ${formatDate(prescriptionData.created_at)}</div>
+              </div>
+              
+              <div class="patient-info">
+                <div class="info-section">
+                  <h3>Patient Information</h3>
+                  <div class="info-item">
+                    <span class="info-label">Name:</span> ${prescriptionData.name}
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Age:</span> ${prescriptionData.age} years
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Gender:</span> ${prescriptionData.gender.charAt(0).toUpperCase() + prescriptionData.gender.slice(1)}
+                  </div>
+                  ${prescriptionData.mobile_number ? `
+                    <div class="info-item">
+                      <span class="info-label">Mobile:</span> ${prescriptionData.mobile_number}
+                    </div>
+                  ` : ''}
+                  ${prescriptionData.address ? `
+                    <div class="info-item">
+                      <span class="info-label">Address:</span> ${prescriptionData.address}
+                    </div>
+                  ` : ''}
+                </div>
+                
+                <div class="info-section">
+                  <h3>Medical Information</h3>
+                  <div class="info-item">
+                    <span class="info-label">Department:</span> ${prescriptionData.department}
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Visit Type:</span> 
+                    <span class="type-badge type-${prescriptionData.type.toLowerCase()}">${prescriptionData.type}</span>
+                  </div>
+                  ${prescriptionData.aadhar_number ? `
+                    <div class="info-item">
+                      <span class="info-label">Aadhar:</span> ${prescriptionData.aadhar_number}
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+              
+              <div class="prescription-area">
+                <h3>Prescription Details</h3>
+                <p style="color: #6b7280; font-style: italic;">
+                  Prescription details and medications will be filled by the doctor.
+                </p>
+              </div>
+              
+              <div class="footer">
+                <div>
+                  <small style="color: #6b7280;">
+                    Generated on ${new Date().toLocaleString()}<br>
+                    This is a computer-generated prescription.
+                  </small>
+                </div>
+                <div class="signature-area">
+                  <div class="signature-line"></div>
+                  <div style="font-size: 14px; color: #374151;">Doctor's Signature</div>
+                  <div style="font-size: 12px; color: #6b7280;">Date: ${new Date().toLocaleDateString()}</div>
+                </div>
+              </div>
+            </body>
+          </html>
+        `);
+        
+        printWindow.document.close();
+        printWindow.focus();
+        
+        setTimeout(() => {
+          printWindow.print();
+          printWindow.close();
+        }, 250);
+      }
     }
   };
 
-  const filteredPrescriptions = useMemo(() => {
-    return prescriptions.filter(prescription => {
-      const matchesSearch = prescription.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           prescription.registration_number.toString().includes(searchTerm);
-      const matchesGender = !genderFilter || prescription.gender === genderFilter;
-      const matchesType = !typeFilter || prescription.type === typeFilter;
-      const matchesDepartment = !departmentFilter || prescription.department === departmentFilter;
-      
-      return matchesSearch && matchesGender && matchesType && matchesDepartment;
-    });
-  }, [prescriptions, searchTerm, genderFilter, typeFilter, departmentFilter]);
-
-  // Pagination logic
-  const totalPages = Math.ceil(filteredPrescriptions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedPrescriptions = filteredPrescriptions.slice(startIndex, startIndex + itemsPerPage);
-
-  const exportToExcel = () => {
-    const worksheet = XLSX.utils.json_to_sheet(filteredPrescriptions.map(prescription => ({
-      'Registration Number': prescription.registration_number,
-      'Date & Time': new Date(prescription.created_at).toLocaleString(),
-      'Patient Name': prescription.name,
-      'Age': prescription.age,
-      'Gender': prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
-      'Department': prescription.department,
-      'Type': prescription.type,
-      'Address': prescription.address || 'N/A',
-      'Aadhar Number': prescription.aadhar_number || 'N/A',
-      'Mobile Number': prescription.mobile_number || 'N/A'
-    })));
-    
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, "Patient Prescriptions");
-    
-    // Style the worksheet
-    const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-    for (let C = range.s.c; C <= range.e.c; ++C) {
-      const address = XLSX.utils.encode_col(C) + "1";
-      if (!worksheet[address]) continue;
-      worksheet[address].s = {
-        font: { bold: true },
-        fill: { fgColor: { rgb: "4F46E5" } }
-      };
-    }
-    
-    XLSX.writeFile(workbook, `patient_prescriptions_${new Date().toISOString().split('T')[0]}.xlsx`);
-    
-    toast({
-      title: "Export Successful",
-      description: "Prescriptions exported to Excel successfully",
-    });
-  };
-
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    
-    // Add header
-    doc.setFontSize(18);
-    doc.setTextColor(79, 70, 229); // medical-blue
-    doc.text('Hospital Prescription Report', 20, 20);
-    
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 35);
-    doc.text(`Total Records: ${filteredPrescriptions.length}`, 20, 45);
-    
-    // Prepare table data
-    const tableData = filteredPrescriptions.map(prescription => [
-      prescription.registration_number.toString(),
-      new Date(prescription.created_at).toLocaleDateString(),
-      prescription.name,
-      prescription.age.toString(),
-      prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
-      prescription.department,
-      prescription.type,
-      prescription.mobile_number || 'N/A'
-    ]);
-
-    autoTable(doc, {
-      head: [['Reg No', 'Date', 'Patient Name', 'Age', 'Gender', 'Department', 'Type', 'Mobile']],
-      body: tableData,
-      startY: 60,
-      theme: 'grid',
-      headStyles: {
-        fillColor: [79, 70, 229],
-        textColor: [255, 255, 255],
-        fontStyle: 'bold'
-      },
-      alternateRowStyles: {
-        fillColor: [248, 250, 252]
-      },
-      margin: { top: 60 }
-    });
-
-    doc.save(`patient_prescriptions_${new Date().toISOString().split('T')[0]}.pdf`);
-    
-    toast({
-      title: "Export Successful",
-      description: "Prescriptions exported to PDF successfully",
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleString('en-IN', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   };
 
@@ -166,226 +235,172 @@ const Prescriptions = () => {
     }
   };
 
-  const departments = Array.from(new Set(prescriptions.map(p => p.department))).sort();
-
-  const clearFilters = () => {
-    setSearchTerm("");
-    setGenderFilter("");
-    setTypeFilter("");
-    setDepartmentFilter("");
-    setCurrentPage(1);
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white">
-        <div className="container mx-auto py-8 px-4">
-          <div className="flex items-center justify-center min-h-[400px]">
-            <div className="text-center space-y-4">
-              <Loader2 className="h-8 w-8 animate-spin mx-auto text-medical-blue" />
-              <p className="text-medical-gray">Loading patient prescriptions...</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-white">
-      <div className="container mx-auto py-8 px-4">
-        <Card className="shadow-lg border-border/40">
-          <CardHeader className="bg-gradient-to-r from-medical-blue/5 to-medical-blue-light/5 border-b border-border/40">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Database className="h-6 w-6 text-medical-blue" />
-                <div>
-                  <CardTitle className="text-2xl font-bold text-medical-dark">Patient Prescriptions</CardTitle>
-                  <CardDescription className="text-medical-gray">
-                    Search, filter, and export patient prescription data
-                  </CardDescription>
-                </div>
+      <div className="w-full max-w-4xl mx-auto space-y-6 p-4">
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-3 justify-between items-center">
+          <Button
+            onClick={onBack}
+            variant="outline"
+            className="flex items-center gap-2 border-border/60 hover:bg-muted/50"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back to Form
+          </Button>
+          
+          <div className="flex gap-3">
+            <Button
+              onClick={onEdit}
+              variant="outline"
+              className="flex items-center gap-2 border-border/60 hover:bg-muted/50"
+            >
+              <Edit className="h-4 w-4" />
+              Edit Prescription
+            </Button>
+            
+            <Button
+              onClick={handlePrint}
+              className="flex items-center gap-2 bg-medical-blue hover:bg-medical-blue/90 text-white"
+            >
+              <Printer className="h-4 w-4" />
+              Print Prescription
+            </Button>
+          </div>
+        </div>
+
+        {/* Prescription Template */}
+        <Card className="shadow-lg border-border/40 bg-white" id="prescription-print-area">
+          <CardHeader className="text-center bg-gradient-to-r from-medical-blue/5 to-medical-blue-light/5 border-b border-border/40">
+            <div className="flex items-center justify-center gap-3 mb-4">
+              <Stethoscope className="h-8 w-8 text-medical-blue" />
+              <div>
+                <h1 className="text-2xl font-bold text-medical-dark">City General Hospital</h1>
+                <p className="text-sm text-medical-gray">Healthcare Excellence Since 1985</p>
               </div>
-              <Button
-                onClick={fetchPrescriptions}
-                variant="outline"
-                size="sm"
-                className="flex items-center gap-2"
-              >
-                <RefreshCw className="h-4 w-4" />
-                Refresh
-              </Button>
+            </div>
+            
+            <div className="text-3xl font-bold text-medical-dark mb-4">PRESCRIPTION</div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+              <div className="flex items-center gap-2">
+                <span className="font-semibold text-medical-dark">Registration No:</span>
+                <span className="text-lg font-bold text-medical-blue">#{prescriptionData.registration_number}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-medical-gray" />
+                <span className="text-sm text-medical-gray">{formatDate(prescriptionData.created_at)}</span>
+              </div>
             </div>
           </CardHeader>
-          
-          <CardContent className="p-6">
-            {/* Search and Filters */}
-            <div className="space-y-4 mb-6">
-              <div className="flex items-center gap-2">
-                <Search className="h-4 w-4 text-medical-gray" />
-                <Input
-                  placeholder="Search by patient name or registration number..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-md border-border/60 focus:border-medical-blue"
-                />
+
+          <CardContent className="p-6 space-y-6">
+            {/* Patient Information Header */}
+            <div className="flex items-center gap-2 mb-4">
+              <User className="h-5 w-5 text-medical-blue" />
+              <h2 className="text-xl font-semibold text-medical-dark">Patient Information</h2>
+            </div>
+
+            {/* Patient Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-medical-gray">Patient Name</label>
+                <p className="text-lg font-semibold text-medical-dark">{prescriptionData.name}</p>
               </div>
               
-              <div className="flex flex-wrap gap-4">
-                <Select value={genderFilter} onValueChange={(value) => setGenderFilter(value === "all-genders" ? "" : value)}>
-                  <SelectTrigger className="w-[180px] border-border/60 focus:border-medical-blue">
-                    <SelectValue placeholder="All Genders" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all-genders">All Genders</SelectItem>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="others">Others</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value === "all-types" ? "" : value)}>
-                  <SelectTrigger className="w-[180px] border-border/60 focus:border-medical-blue">
-                    <SelectValue placeholder="All Types" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all-types">All Types</SelectItem>
-                    <SelectItem value="ANC">ANC</SelectItem>
-                    <SelectItem value="General">General</SelectItem>
-                    <SelectItem value="JSSK">JSSK</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={departmentFilter} onValueChange={(value) => setDepartmentFilter(value === "all-departments" ? "" : value)}>
-                  <SelectTrigger className="w-[200px] border-border/60 focus:border-medical-blue">
-                    <SelectValue placeholder="All Departments" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all-departments">All Departments</SelectItem>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-
-                <Button
-                  onClick={clearFilters}
-                  variant="outline"
-                  size="sm"
-                >
-                  Clear Filters
-                </Button>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-medical-gray">Age</label>
+                <p className="text-lg font-semibold text-medical-dark">{prescriptionData.age} years</p>
               </div>
               
-              {/* Export Buttons */}
-              <div className="flex gap-3">
-                <Button
-                  onClick={exportToExcel}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                  disabled={filteredPrescriptions.length === 0}
-                >
-                  <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Export Excel
-                </Button>
-                
-                <Button
-                  onClick={exportToPDF}
-                  className="bg-red-600 hover:bg-red-700 text-white"
-                  disabled={filteredPrescriptions.length === 0}
-                >
-                  <FileText className="w-4 h-4 mr-2" />
-                  Export PDF
-                </Button>
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-medical-gray">Gender</label>
+                <p className="text-lg font-semibold text-medical-dark capitalize">{prescriptionData.gender}</p>
+              </div>
+              
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-medical-gray">Department</label>
+                <p className="text-lg font-semibold text-medical-dark">{prescriptionData.department}</p>
+              </div>
+              
+              <div className="space-y-1">
+                <label className="text-sm font-medium text-medical-gray">Visit Type</label>
+                <Badge className={`text-sm font-medium ${getTypeColor(prescriptionData.type)}`}>
+                  {prescriptionData.type}
+                </Badge>
               </div>
             </div>
 
-            {/* Results Summary */}
-            <div className="text-center p-4 bg-muted/20 rounded-lg mb-6">
-              <p className="text-lg text-medical-gray">
-                Showing {paginatedPrescriptions.length} of {filteredPrescriptions.length} prescriptions
-                {filteredPrescriptions.length !== prescriptions.length && (
-                  <span className="text-medical-blue"> (filtered from {prescriptions.length} total)</span>
-                )}
-              </p>
-            </div>
-
-            {/* Table */}
-            <div className="overflow-x-auto rounded-lg border border-border/40">
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-border/40 bg-muted/20">
-                    <TableHead className="text-medical-dark font-semibold">Reg. No.</TableHead>
-                    <TableHead className="text-medical-dark font-semibold">Date & Time</TableHead>
-                    <TableHead className="text-medical-dark font-semibold">Patient Name</TableHead>
-                    <TableHead className="text-medical-dark font-semibold">Age</TableHead>
-                    <TableHead className="text-medical-dark font-semibold">Gender</TableHead>
-                    <TableHead className="text-medical-dark font-semibold">Department</TableHead>
-                    <TableHead className="text-medical-dark font-semibold">Type</TableHead>
-                    <TableHead className="text-medical-dark font-semibold">Mobile</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginatedPrescriptions.map((prescription) => (
-                    <TableRow key={prescription.id} className="border-border/40 hover:bg-muted/10">
-                      <TableCell className="font-medium text-medical-blue">
-                        #{prescription.registration_number}
-                      </TableCell>
-                      <TableCell className="text-medical-gray">
-                        {new Date(prescription.created_at).toLocaleString()}
-                      </TableCell>
-                      <TableCell className="font-medium text-medical-dark">{prescription.name}</TableCell>
-                      <TableCell className="text-medical-gray">{prescription.age}</TableCell>
-                      <TableCell className="capitalize text-medical-gray">{prescription.gender}</TableCell>
-                      <TableCell className="text-medical-gray">{prescription.department}</TableCell>
-                      <TableCell>
-                        <Badge className={getTypeColor(prescription.type)}>
-                          {prescription.type}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-medical-gray">{prescription.mobile_number || 'N/A'}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-
-            {filteredPrescriptions.length === 0 && (
-              <div className="text-center p-8">
-                <p className="text-medical-gray">No prescriptions found matching your criteria.</p>
-              </div>
-            )}
-
-            {/* Pagination */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between mt-6">
-                <p className="text-sm text-medical-gray">
-                  Page {currentPage} of {totalPages}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                    disabled={currentPage === 1}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Next
-                  </Button>
+            {/* Contact Information */}
+            {(prescriptionData.mobile_number || prescriptionData.address || prescriptionData.aadhar_number) && (
+              <>
+                <Separator className="my-6" />
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold text-medical-dark flex items-center gap-2">
+                    <Phone className="h-4 w-4 text-medical-blue" />
+                    Contact Information
+                  </h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {prescriptionData.mobile_number && (
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-medical-gray">Mobile Number</label>
+                        <p className="text-base text-medical-dark">{prescriptionData.mobile_number}</p>
+                      </div>
+                    )}
+                    
+                    {prescriptionData.aadhar_number && (
+                      <div className="space-y-1">
+                        <label className="text-sm font-medium text-medical-gray flex items-center gap-1">
+                          <CreditCard className="h-3 w-3" />
+                          Aadhar Number
+                        </label>
+                        <p className="text-base text-medical-dark">{prescriptionData.aadhar_number}</p>
+                      </div>
+                    )}
+                    
+                    {prescriptionData.address && (
+                      <div className="space-y-1 md:col-span-2">
+                        <label className="text-sm font-medium text-medical-gray flex items-center gap-1">
+                          <MapPin className="h-3 w-3" />
+                          Address
+                        </label>
+                        <p className="text-base text-medical-dark">{prescriptionData.address}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </>
             )}
+
+            {/* Prescription Details Section */}
+            <Separator className="my-6" />
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-medical-dark">Prescription Details</h3>
+              <div className="min-h-[200px] border-2 border-dashed border-border/60 rounded-lg p-6 bg-muted/10">
+                <p className="text-medical-gray text-center italic">
+                  Prescription details and medications will be filled by the doctor.
+                </p>
+              </div>
+            </div>
+
+            {/* Doctor Signature Section */}
+            <Separator className="my-6" />
+            <div className="flex justify-between items-end">
+              <div className="text-xs text-medical-gray">
+                <p>Generated on {new Date().toLocaleString()}</p>
+                <p>This is a computer-generated prescription.</p>
+              </div>
+              <div className="text-right space-y-2">
+                <div className="w-48 border-b border-border/60 pb-2 h-12">
+                  <p className="text-sm text-medical-gray">Doctor's Signature</p>
+                </div>
+                <p className="text-xs text-medical-gray">Date: {new Date().toLocaleDateString()}</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
     </div>
   );
 };
-
-export default Prescriptions;
