@@ -404,3 +404,5 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
     </div>
   );
 };
+
+export default PrescriptionTemplate
