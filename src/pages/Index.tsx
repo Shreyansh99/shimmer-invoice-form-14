@@ -6,12 +6,12 @@ import { Separator } from "@/components/ui/separator";
 import { Edit, Printer, ArrowLeft, Building2, Calendar, User, Phone, MapPin, CreditCard, Stethoscope } from "lucide-react";
 import type { PrescriptionData } from "@/types/prescription";
 
-interface PrescriptionTemplateProps {
+interface IndexProps {
   prescriptionData: PrescriptionData;
   onBack: () => void;
 }
 
-export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionTemplateProps) => {
+const Index = ({ prescriptionData, onBack }: IndexProps) => {
   const handlePrint = () => {
     const printContent = document.getElementById('prescription-print-area');
     if (printContent) {
@@ -404,3 +404,5 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
     </div>
   );
 };
+
+export default Index;
