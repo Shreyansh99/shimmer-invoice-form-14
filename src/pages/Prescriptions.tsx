@@ -5,12 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, FileText, RefreshCw, X } from "lucide-react";
+import { Search, FileText, RefreshCw, X, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 import type { PrescriptionData } from "@/types/prescription";
 
 const Prescriptions = () => {
@@ -21,8 +21,6 @@ const Prescriptions = () => {
   const [genderFilter, setGenderFilter] = useState("");
   const [departmentFilter, setDepartmentFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
   const { toast } = useToast();
 
   // Fetch prescriptions from Supabase
@@ -67,7 +65,6 @@ const Prescriptions = () => {
     });
     
     setFilteredPrescriptions(filtered);
-    setCurrentPage(1);
   }, [prescriptions, searchTerm, genderFilter, departmentFilter, typeFilter]);
 
   const clearFilters = () => {
@@ -85,6 +82,94 @@ const Prescriptions = () => {
     });
   };
 
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF('landscape', 'mm', 'a4');
+      
+      // Add title
+      doc.setFontSize(18);
+      doc.setTextColor(37, 99, 235); // Blue color
+      doc.text('Hospital Prescriptions Report', 20, 20);
+      
+      // Add date
+      doc.setFontSize(10);
+      doc.setTextColor(107, 114, 128); // Gray color
+      doc.text(`Generated on: ${new Date().toLocaleDateString('en-IN')}`, 20, 28);
+      doc.text(`Total Records: ${filteredPrescriptions.length}`, 20, 34);
+
+      // Prepare table data
+      const tableData = filteredPrescriptions.map(prescription => [
+        String(prescription.registration_number).padStart(6, '0'),
+        prescription.name,
+        prescription.age.toString(),
+        prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
+        prescription.department,
+        prescription.type,
+        prescription.mobile_number || 'N/A',
+        new Date(prescription.created_at).toLocaleDateString('en-IN', {
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit'
+        })
+      ]);
+
+      // Create table
+      autoTable(doc, {
+        head: [['Reg. No.', 'Patient Name', 'Age', 'Gender', 'Department', 'Type', 'Mobile', 'Date']],
+        body: tableData,
+        startY: 40,
+        theme: 'grid',
+        headStyles: {
+          fillColor: [37, 99, 235], // Blue background
+          textColor: [255, 255, 255], // White text
+          fontStyle: 'bold',
+          fontSize: 9,
+          halign: 'center'
+        },
+        bodyStyles: {
+          fontSize: 8,
+          cellPadding: 2,
+          halign: 'center'
+        },
+        columnStyles: {
+          0: { cellWidth: 18, halign: 'center' }, // Reg. No.
+          1: { cellWidth: 45, halign: 'left' },   // Patient Name
+          2: { cellWidth: 12, halign: 'center' }, // Age
+          3: { cellWidth: 18, halign: 'center' }, // Gender
+          4: { cellWidth: 35, halign: 'left' },   // Department
+          5: { cellWidth: 18, halign: 'center' }, // Type
+          6: { cellWidth: 25, halign: 'center' }, // Mobile
+          7: { cellWidth: 22, halign: 'center' }  // Date
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252] // Light gray for alternate rows
+        },
+        margin: { top: 40, right: 20, bottom: 20, left: 20 },
+        tableWidth: 'auto',
+        styles: {
+          overflow: 'linebreak',
+          cellWidth: 'wrap'
+        }
+      });
+
+      // Save the PDF
+      const fileName = `Hospital_Prescriptions_${new Date().toISOString().split('T')[0]}.pdf`;
+      doc.save(fileName);
+      
+      toast({
+        title: "PDF Export Successful",
+        description: `${filteredPrescriptions.length} prescriptions exported to ${fileName}`,
+      });
+    } catch (error) {
+      console.error("PDF export error:", error);
+      toast({
+        title: "PDF Export Failed",
+        description: "Failed to export prescriptions to PDF.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const exportToExcel = () => {
     try {
       const exportData = filteredPrescriptions.map(prescription => ({
@@ -97,7 +182,11 @@ const Prescriptions = () => {
         'Mobile Number': prescription.mobile_number || 'N/A',
         'Address': prescription.address || 'N/A',
         'Aadhar Number': prescription.aadhar_number || 'N/A',
-        'Created Date': new Date(prescription.created_at).toLocaleDateString()
+        'Created Date': new Date(prescription.created_at).toLocaleDateString('en-IN', {
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit'
+        })
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -106,103 +195,32 @@ const Prescriptions = () => {
       // Set column widths
       const colWidths = [
         { wch: 18 }, // Registration Number
-        { wch: 20 }, // Patient Name
+        { wch: 25 }, // Patient Name
         { wch: 8 },  // Age
         { wch: 10 }, // Gender
-        { wch: 15 }, // Department
+        { wch: 20 }, // Department
         { wch: 10 }, // Type
         { wch: 15 }, // Mobile Number
-        { wch: 30 }, // Address
+        { wch: 35 }, // Address
         { wch: 18 }, // Aadhar Number
-        { wch: 12 }  // Created Date
+        { wch: 15 }  // Created Date
       ];
       ws['!cols'] = colWidths;
       
       XLSX.utils.book_append_sheet(wb, ws, "Prescriptions");
-      XLSX.writeFile(wb, `prescriptions_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      const fileName = `Hospital_Prescriptions_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
       
       toast({
-        title: "Export successful",
-        description: "Prescriptions exported to Excel file.",
+        title: "Excel Export Successful",
+        description: `${filteredPrescriptions.length} prescriptions exported to ${fileName}`,
       });
     } catch (error) {
+      console.error("Excel export error:", error);
       toast({
-        title: "Export failed",
+        title: "Excel Export Failed",
         description: "Failed to export prescriptions to Excel.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const exportToPDF = () => {
-    try {
-      const doc = new jsPDF();
-      
-      // Add title
-      doc.setFontSize(20);
-      doc.setTextColor(37, 99, 235);
-      doc.text('Hospital Prescription System', 20, 20);
-      
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 0);
-      doc.text('Prescriptions Report', 20, 35);
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 45);
-      doc.text(`Total Records: ${filteredPrescriptions.length}`, 20, 52);
-
-      // Prepare table data
-      const tableData = filteredPrescriptions.map(prescription => [
-        String(prescription.registration_number).padStart(6, '0'),
-        prescription.name,
-        prescription.age.toString(),
-        prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
-        prescription.department,
-        prescription.type,
-        prescription.mobile_number || 'N/A',
-        new Date(prescription.created_at).toLocaleDateString()
-      ]);
-
-      // Add table
-      (doc as any).autoTable({
-        head: [['Reg. No.', 'Patient Name', 'Age', 'Gender', 'Department', 'Type', 'Mobile', 'Date']],
-        body: tableData,
-        startY: 60,
-        styles: {
-          fontSize: 8,
-          cellPadding: 3,
-        },
-        headStyles: {
-          fillColor: [37, 99, 235],
-          textColor: 255,
-          fontStyle: 'bold',
-        },
-        alternateRowStyles: {
-          fillColor: [245, 245, 245],
-        },
-        columnStyles: {
-          0: { cellWidth: 20 },
-          1: { cellWidth: 30 },
-          2: { cellWidth: 15 },
-          3: { cellWidth: 20 },
-          4: { cellWidth: 25 },
-          5: { cellWidth: 20 },
-          6: { cellWidth: 25 },
-          7: { cellWidth: 20 },
-        },
-      });
-
-      doc.save(`prescriptions_${new Date().toISOString().split('T')[0]}.pdf`);
-      
-      toast({
-        title: "Export successful",
-        description: "Prescriptions exported to PDF file.",
-      });
-    } catch (error) {
-      toast({
-        title: "Export failed",
-        description: "Failed to export prescriptions to PDF.",
         variant: "destructive",
       });
     }
@@ -216,12 +234,6 @@ const Prescriptions = () => {
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
-
-  // Pagination
-  const totalPages = Math.ceil(filteredPrescriptions.length / itemsPerPage);
-  const startIndex = (currentPage - 1) * itemsPerPage;
-  const endIndex = startIndex + itemsPerPage;
-  const currentPrescriptions = filteredPrescriptions.slice(startIndex, endIndex);
 
   if (loading) {
     return (
@@ -241,7 +253,7 @@ const Prescriptions = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-900">Prescriptions</h1>
-            <p className="text-gray-600">Manage and view all patient prescriptions</p>
+            <p className="text-gray-600">View and export all patient prescriptions</p>
           </div>
           <div className="flex gap-2">
             <Button onClick={refreshData} variant="outline" size="sm">
@@ -252,11 +264,11 @@ const Prescriptions = () => {
         </div>
 
         {/* Filters */}
-        <Card className="border-gray-200">
-          <CardHeader>
-            <CardTitle className="text-lg">Filters & Search</CardTitle>
+        <Card className="border-gray-200 shadow-sm">
+          <CardHeader className="bg-blue-50 border-b border-gray-200">
+            <CardTitle className="text-lg text-gray-900">Filters & Search</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -313,7 +325,7 @@ const Prescriptions = () => {
                 </SelectContent>
               </Select>
 
-              <Button onClick={clearFilters} variant="outline" className="w-full">
+              <Button onClick={clearFilters} variant="outline" className="w-full border-gray-300 hover:bg-gray-50">
                 <X className="h-4 w-4 mr-2" />
                 Clear Filters
               </Button>
@@ -324,68 +336,94 @@ const Prescriptions = () => {
         {/* Results Summary & Export */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <p className="text-sm text-gray-600">
-            Showing {startIndex + 1}-{Math.min(endIndex, filteredPrescriptions.length)} of {filteredPrescriptions.length} prescriptions
+            Showing {filteredPrescriptions.length} prescription{filteredPrescriptions.length !== 1 ? 's' : ''}
+            {filteredPrescriptions.length !== prescriptions.length && ` (filtered from ${prescriptions.length} total)`}
           </p>
           <div className="flex gap-2">
-            <Button onClick={exportToExcel} variant="outline" size="sm">
-              <FileText className="h-4 w-4 mr-2" />
-              Export Excel
-            </Button>
-            <Button onClick={exportToPDF} variant="outline" size="sm">
+            <Button 
+              onClick={exportToPDF} 
+              variant="outline" 
+              size="sm"
+              disabled={filteredPrescriptions.length === 0}
+              className="bg-red-50 border-red-200 text-red-700 hover:bg-red-100 hover:border-red-300"
+            >
               <Download className="h-4 w-4 mr-2" />
-              Export PDF
+              Export PDF ({filteredPrescriptions.length})
+            </Button>
+            <Button 
+              onClick={exportToExcel} 
+              variant="outline" 
+              size="sm"
+              disabled={filteredPrescriptions.length === 0}
+              className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:border-green-300"
+            >
+              <FileText className="h-4 w-4 mr-2" />
+              Export Excel ({filteredPrescriptions.length})
             </Button>
           </div>
         </div>
 
         {/* Prescriptions Table */}
-        <Card className="border-gray-200">
+        <Card className="border-gray-200 shadow-sm">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gray-50">
-                    <TableHead className="w-32 text-center">Registration No.</TableHead>
-                    <TableHead className="min-w-48">Patient Name</TableHead>
-                    <TableHead className="w-20 text-center">Age</TableHead>
-                    <TableHead className="w-24 text-center">Gender</TableHead>
-                    <TableHead className="min-w-32">Department</TableHead>
-                    <TableHead className="w-24 text-center">Type</TableHead>
-                    <TableHead className="w-32 text-center">Date</TableHead>
+                  <TableRow className="bg-blue-50 border-b border-gray-200">
+                    <TableHead className="w-32 text-center font-semibold text-gray-900">Registration No.</TableHead>
+                    <TableHead className="min-w-48 font-semibold text-gray-900">Patient Name</TableHead>
+                    <TableHead className="w-20 text-center font-semibold text-gray-900">Age</TableHead>
+                    <TableHead className="w-24 text-center font-semibold text-gray-900">Gender</TableHead>
+                    <TableHead className="min-w-32 font-semibold text-gray-900">Department</TableHead>
+                    <TableHead className="w-24 text-center font-semibold text-gray-900">Type</TableHead>
+                    <TableHead className="w-32 text-center font-semibold text-gray-900">Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {currentPrescriptions.length === 0 ? (
+                  {filteredPrescriptions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-600">
-                        No prescriptions found matching your criteria.
+                      <TableCell colSpan={7} className="text-center py-12 text-gray-600">
+                        <div className="flex flex-col items-center gap-2">
+                          <FileText className="h-12 w-12 text-gray-400" />
+                          <p className="text-lg font-medium">No prescriptions found</p>
+                          <p className="text-sm">Try adjusting your search criteria or filters</p>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ) : (
-                    currentPrescriptions.map((prescription) => (
-                      <TableRow key={prescription.id} className="hover:bg-gray-50">
-                        <TableCell className="text-center font-mono text-sm">
+                    filteredPrescriptions.map((prescription, index) => (
+                      <TableRow 
+                        key={prescription.id} 
+                        className={`hover:bg-blue-50 transition-colors ${
+                          index % 2 === 0 ? 'bg-white' : 'bg-gray-50'
+                        }`}
+                      >
+                        <TableCell className="text-center font-mono text-sm font-medium text-blue-600">
                           #{String(prescription.registration_number).padStart(6, '0')}
                         </TableCell>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium text-gray-900">
                           {prescription.name}
                         </TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center text-gray-700">
                           {prescription.age}
                         </TableCell>
-                        <TableCell className="text-center capitalize">
+                        <TableCell className="text-center capitalize text-gray-700">
                           {prescription.gender}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-gray-700">
                           {prescription.department}
                         </TableCell>
                         <TableCell className="text-center">
-                          <Badge className={`text-xs ${getTypeColor(prescription.type)}`}>
+                          <Badge className={`text-xs font-medium ${getTypeColor(prescription.type)}`}>
                             {prescription.type}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-center text-sm text-gray-600">
-                          {new Date(prescription.created_at).toLocaleDateString()}
+                          {new Date(prescription.created_at).toLocaleDateString('en-IN', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: '2-digit'
+                          })}
                         </TableCell>
                       </TableRow>
                     ))
@@ -396,38 +434,10 @@ const Prescriptions = () => {
           </CardContent>
         </Card>
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex justify-center gap-2">
-            <Button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-              variant="outline"
-              size="sm"
-            >
-              Previous
-            </Button>
-            
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <Button
-                key={page}
-                onClick={() => setCurrentPage(page)}
-                variant={currentPage === page ? "default" : "outline"}
-                size="sm"
-                className={currentPage === page ? "bg-blue-600 hover:bg-blue-700" : ""}
-              >
-                {page}
-              </Button>
-            ))}
-            
-            <Button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-              disabled={currentPage === totalPages}
-              variant="outline"
-              size="sm"
-            >
-              Next
-            </Button>
+        {/* Footer Info */}
+        {filteredPrescriptions.length > 0 && (
+          <div className="text-center text-sm text-gray-500 py-4">
+            All {filteredPrescriptions.length} prescription{filteredPrescriptions.length !== 1 ? 's' : ''} displayed on this page
           </div>
         )}
       </div>

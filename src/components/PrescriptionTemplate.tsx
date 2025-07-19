@@ -3,16 +3,15 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Printer, ArrowLeft, Edit, Stethoscope } from "lucide-react";
+import { Printer, ArrowLeft, Stethoscope } from "lucide-react";
 import type { PrescriptionData } from "@/types/prescription";
 
 interface PrescriptionTemplateProps {
   prescriptionData: PrescriptionData;
   onBack: () => void;
-  onEdit: () => void;
 }
 
-export const PrescriptionTemplate = ({ prescriptionData, onBack, onEdit }: PrescriptionTemplateProps) => {
+export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionTemplateProps) => {
   const handlePrint = () => {
     const printContent = document.getElementById('prescription-print-area');
     if (printContent) {
@@ -293,14 +292,6 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack, onEdit }: Presc
           </Button>
           
           <div className="flex gap-3">
-            <Button
-              onClick={onEdit}
-              variant="outline"
-              className="flex items-center gap-2 border-gray-300 hover:bg-gray-50"
-            >
-              <Edit className="h-4 w-4" />
-              Edit Prescription
-            </Button>
             <Button
               onClick={handlePrint}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
