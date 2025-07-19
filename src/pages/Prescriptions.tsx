@@ -5,12 +5,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, Download, FileText, RefreshCw, X } from "lucide-react";
+import { Search, FileText, RefreshCw, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
-import 'jspdf-autotable';
 import type { PrescriptionData } from "@/types/prescription";
 
 const Prescriptions = () => {
@@ -97,7 +95,11 @@ const Prescriptions = () => {
         'Mobile Number': prescription.mobile_number || 'N/A',
         'Address': prescription.address || 'N/A',
         'Aadhar Number': prescription.aadhar_number || 'N/A',
-        'Created Date': new Date(prescription.created_at).toLocaleDateString()
+        'Created Date': new Date(prescription.created_at).toLocaleDateString('en-IN', {
+          year: 'numeric',
+          month: 'short',
+          day: '2-digit'
+        })
       }));
 
       const ws = XLSX.utils.json_to_sheet(exportData);
@@ -118,14 +120,29 @@ const Prescriptions = () => {
       ];
       ws['!cols'] = colWidths;
       
+      // Add header styling
+      const headerRange = XLSX.utils.decode_range(ws['!ref'] || 'A1');
+      for (let col = headerRange.s.c; col <= headerRange.e.c; col++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+        if (!ws[cellAddress]) continue;
+        ws[cellAddress].s = {
+          font: { bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "2563EB" } },
+          alignment: { horizontal: "center", vertical: "center" }
+        };
+      }
+      
       XLSX.utils.book_append_sheet(wb, ws, "Prescriptions");
-      XLSX.writeFile(wb, `prescriptions_${new Date().toISOString().split('T')[0]}.xlsx`);
+      
+      const fileName = `Hospital_Prescriptions_${new Date().toISOString().split('T')[0]}.xlsx`;
+      XLSX.writeFile(wb, fileName);
       
       toast({
         title: "Export successful",
-        description: "Prescriptions exported to Excel file.",
+        description: `${filteredPrescriptions.length} prescriptions exported to ${fileName}`,
       });
     } catch (error) {
+      console.error("Excel export error:", error);
       toast({
         title: "Export failed",
         description: "Failed to export prescriptions to Excel.",
@@ -134,79 +151,6 @@ const Prescriptions = () => {
     }
   };
 
-  const exportToPDF = () => {
-    try {
-      const doc = new jsPDF();
-      
-      // Add title
-      doc.setFontSize(20);
-      doc.setTextColor(37, 99, 235);
-      doc.text('Hospital Prescription System', 20, 20);
-      
-      doc.setFontSize(16);
-      doc.setTextColor(0, 0, 0);
-      doc.text('Prescriptions Report', 20, 35);
-      
-      doc.setFontSize(10);
-      doc.setTextColor(100, 100, 100);
-      doc.text(`Generated on: ${new Date().toLocaleString()}`, 20, 45);
-      doc.text(`Total Records: ${filteredPrescriptions.length}`, 20, 52);
-
-      // Prepare table data
-      const tableData = filteredPrescriptions.map(prescription => [
-        String(prescription.registration_number).padStart(6, '0'),
-        prescription.name,
-        prescription.age.toString(),
-        prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
-        prescription.department,
-        prescription.type,
-        prescription.mobile_number || 'N/A',
-        new Date(prescription.created_at).toLocaleDateString()
-      ]);
-
-      // Add table
-      (doc as any).autoTable({
-        head: [['Reg. No.', 'Patient Name', 'Age', 'Gender', 'Department', 'Type', 'Mobile', 'Date']],
-        body: tableData,
-        startY: 60,
-        styles: {
-          fontSize: 8,
-          cellPadding: 3,
-        },
-        headStyles: {
-          fillColor: [37, 99, 235],
-          textColor: 255,
-          fontStyle: 'bold',
-        },
-        alternateRowStyles: {
-          fillColor: [245, 245, 245],
-        },
-        columnStyles: {
-          0: { cellWidth: 20 },
-          1: { cellWidth: 30 },
-          2: { cellWidth: 15 },
-          3: { cellWidth: 20 },
-          4: { cellWidth: 25 },
-          5: { cellWidth: 20 },
-          6: { cellWidth: 25 },
-          7: { cellWidth: 20 },
-        },
-      });
-
-      doc.save(`prescriptions_${new Date().toISOString().split('T')[0]}.pdf`);
-      
-      toast({
-        title: "Export successful",
-        description: "Prescriptions exported to PDF file.",
-      });
-    } catch (error) {
-      toast({
-        title: "Export failed",
-        description: "Failed to export prescriptions to PDF.",
-        variant: "destructive",
-      });
-    }
-  };
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -326,16 +270,16 @@ const Prescriptions = () => {
           <p className="text-sm text-gray-600">
             Showing {startIndex + 1}-{Math.min(endIndex, filteredPrescriptions.length)} of {filteredPrescriptions.length} prescriptions
           </p>
-          <div className="flex gap-2">
-            <Button onClick={exportToExcel} variant="outline" size="sm">
-              <FileText className="h-4 w-4 mr-2" />
-              Export Excel
-            </Button>
-            <Button onClick={exportToPDF} variant="outline" size="sm">
-              <Download className="h-4 w-4 mr-2" />
-              Export PDF
-            </Button>
-          </div>
+          <Button 
+            onClick={exportToExcel} 
+            variant="outline" 
+            size="sm"
+            disabled={filteredPrescriptions.length === 0}
+            className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100 hover:border-green-300"
+          >
+            <FileText className="h-4 w-4 mr-2" />
+            Export to Excel ({filteredPrescriptions.length} records)
+          </Button>
         </div>
 
         {/* Prescriptions Table */}
