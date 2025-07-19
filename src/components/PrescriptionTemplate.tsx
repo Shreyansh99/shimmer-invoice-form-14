@@ -3,15 +3,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Edit, Printer, ArrowLeft, Building2, Calendar, User, Phone, MapPin, CreditCard, Stethoscope } from "lucide-react";
+import { Printer, ArrowLeft, Edit, Stethoscope } from "lucide-react";
 import type { PrescriptionData } from "@/types/prescription";
 
 interface PrescriptionTemplateProps {
   prescriptionData: PrescriptionData;
   onBack: () => void;
+  onEdit: () => void;
 }
 
-export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionTemplateProps) => {
+export const PrescriptionTemplate = ({ prescriptionData, onBack, onEdit }: PrescriptionTemplateProps) => {
   const handlePrint = () => {
     const printContent = document.getElementById('prescription-print-area');
     if (printContent) {
@@ -38,7 +39,7 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
                   display: flex;
                   justify-content: space-between;
                   align-items: flex-start;
-                  border-bottom: 2px solid #4F46E5;
+                  border-bottom: 2px solid #2563eb;
                   padding-bottom: 15px;
                   margin-bottom: 20px;
                 }
@@ -48,7 +49,7 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
                 .hospital-info .hospital-name {
                   font-size: 18px;
                   font-weight: bold;
-                  color: #4F46E5;
+                  color: #2563eb;
                   margin-bottom: 5px;
                 }
                 .hospital-info .hospital-subtitle {
@@ -87,7 +88,7 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
                 .section-title {
                   font-size: 14px;
                   font-weight: bold;
-                  color: #4F46E5;
+                  color: #2563eb;
                   margin-bottom: 8px;
                   border-bottom: 1px solid #e5e7eb;
                   padding-bottom: 3px;
@@ -115,7 +116,7 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
                   background: #f9fafb;
                 }
                 .prescription-area h3 {
-                  color: #4F46E5;
+                  color: #2563eb;
                   margin-bottom: 10px;
                   font-size: 14px;
                 }
@@ -285,7 +286,7 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
           <Button
             onClick={onBack}
             variant="outline"
-            className="flex items-center gap-2 border-border/60 hover:bg-muted/50"
+            className="flex items-center gap-2 border-gray-300 hover:bg-gray-50"
           >
             <ArrowLeft className="h-4 w-4" />
             Back to Form
@@ -293,8 +294,16 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
           
           <div className="flex gap-3">
             <Button
+              onClick={onEdit}
+              variant="outline"
+              className="flex items-center gap-2 border-gray-300 hover:bg-gray-50"
+            >
+              <Edit className="h-4 w-4" />
+              Edit Prescription
+            </Button>
+            <Button
               onClick={handlePrint}
-              className="flex items-center gap-2 bg-medical-blue hover:bg-medical-blue/90 text-white"
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white"
             >
               <Printer className="h-4 w-4" />
               Print Prescription
@@ -303,26 +312,26 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
         </div>
 
         {/* Prescription Template */}
-        <Card className="shadow-lg border-border/40 bg-white" id="prescription-print-area">
-          <CardHeader className="bg-gradient-to-r from-medical-blue/5 to-medical-blue-light/5 border-b border-border/40">
+        <Card className="shadow-lg border-gray-200 bg-white" id="prescription-print-area">
+          <CardHeader className="bg-blue-50 border-b border-gray-200">
             <div className="flex justify-between items-start mb-4">
               <div className="flex items-center gap-3">
-                <Stethoscope className="h-6 w-6 text-medical-blue" />
+                <Stethoscope className="h-6 w-6 text-blue-600" />
                 <div>
-                  <h1 className="text-xl font-bold text-medical-dark">City General Hospital</h1>
-                  <p className="text-sm text-medical-gray">Healthcare Excellence Since 1985</p>
+                  <h1 className="text-xl font-bold text-gray-900">City General Hospital</h1>
+                  <p className="text-sm text-gray-600">Healthcare Excellence Since 1985</p>
                 </div>
               </div>
               <div className="text-right">
-                <p className="text-sm text-medical-gray font-medium">
+                <p className="text-sm text-gray-600 font-medium">
                   NO. {String(prescriptionData.registration_number).padStart(6, '0')}
                 </p>
               </div>
             </div>
             
             <div className="text-center">
-              <div className="text-2xl font-bold text-medical-dark mb-3">PRESCRIPTION</div>
-              <div className="text-sm text-medical-gray">
+              <div className="text-2xl font-bold text-gray-900 mb-3">PRESCRIPTION</div>
+              <div className="text-sm text-gray-600">
                 <span className="font-medium">Date:</span> {formatDate(prescriptionData.created_at)}
               </div>
             </div>
@@ -332,48 +341,48 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
             {/* Patient Information in Two Columns */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-medical-dark border-b border-border/40 pb-2">
+                <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                   Patient Information
                 </h3>
                 
                 <div className="space-y-2">
                   <div className="flex">
-                    <span className="text-sm font-medium text-medical-gray w-20 flex-shrink-0">Name:</span>
-                    <span className="text-sm font-semibold text-medical-dark">{prescriptionData.name}</span>
+                    <span className="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Name:</span>
+                    <span className="text-sm font-semibold text-gray-900">{prescriptionData.name}</span>
                   </div>
                   
                   <div className="flex">
-                    <span className="text-sm font-medium text-medical-gray w-20 flex-shrink-0">Age:</span>
-                    <span className="text-sm font-semibold text-medical-dark">{prescriptionData.age} years</span>
+                    <span className="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Age:</span>
+                    <span className="text-sm font-semibold text-gray-900">{prescriptionData.age} years</span>
                   </div>
                   
                   <div className="flex">
-                    <span className="text-sm font-medium text-medical-gray w-20 flex-shrink-0">Gender:</span>
-                    <span className="text-sm font-semibold text-medical-dark capitalize">{prescriptionData.gender}</span>
+                    <span className="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Gender:</span>
+                    <span className="text-sm font-semibold text-gray-900 capitalize">{prescriptionData.gender}</span>
                   </div>
                   
                   {prescriptionData.mobile_number && (
                     <div className="flex">
-                      <span className="text-sm font-medium text-medical-gray w-20 flex-shrink-0">Mobile:</span>
-                      <span className="text-sm text-medical-dark">{prescriptionData.mobile_number}</span>
+                      <span className="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Mobile:</span>
+                      <span className="text-sm text-gray-900">{prescriptionData.mobile_number}</span>
                     </div>
                   )}
                 </div>
               </div>
               
               <div className="space-y-3">
-                <h3 className="text-lg font-semibold text-medical-dark border-b border-border/40 pb-2">
+                <h3 className="text-lg font-semibold text-gray-900 border-b border-gray-200 pb-2">
                   Medical Information
                 </h3>
                 
                 <div className="space-y-2">
                   <div className="flex">
-                    <span className="text-sm font-medium text-medical-gray w-20 flex-shrink-0">Department:</span>
-                    <span className="text-sm font-semibold text-medical-dark">{prescriptionData.department}</span>
+                    <span className="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Department:</span>
+                    <span className="text-sm font-semibold text-gray-900">{prescriptionData.department}</span>
                   </div>
                   
                   <div className="flex">
-                    <span className="text-sm font-medium text-medical-gray w-20 flex-shrink-0">Type:</span>
+                    <span className="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Type:</span>
                     <Badge className={`text-xs font-medium ${getTypeColor(prescriptionData.type)}`}>
                       {prescriptionData.type}
                     </Badge>
@@ -381,15 +390,15 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
                   
                   {prescriptionData.aadhar_number && (
                     <div className="flex">
-                      <span className="text-sm font-medium text-medical-gray w-20 flex-shrink-0">Aadhar:</span>
-                      <span className="text-sm text-medical-dark">{prescriptionData.aadhar_number}</span>
+                      <span className="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Aadhar:</span>
+                      <span className="text-sm text-gray-900">{prescriptionData.aadhar_number}</span>
                     </div>
                   )}
                   
                   {prescriptionData.address && (
                     <div className="flex">
-                      <span className="text-sm font-medium text-medical-gray w-20 flex-shrink-0">Address:</span>
-                      <span className="text-sm text-medical-dark">{prescriptionData.address}</span>
+                      <span className="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Address:</span>
+                      <span className="text-sm text-gray-900">{prescriptionData.address}</span>
                     </div>
                   )}
                 </div>
@@ -398,25 +407,25 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
 
             {/* Prescription Details Section */}
             <div className="space-y-3">
-              <h3 className="text-lg font-semibold text-medical-dark">Prescription Details</h3>
-              <div className="min-h-[120px] border-2 border-dashed border-border/60 rounded-lg p-4 bg-muted/10">
-                <p className="text-medical-gray text-center italic text-sm">
+              <h3 className="text-lg font-semibold text-gray-900">Prescription Details</h3>
+              <div className="min-h-[120px] border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
+                <p className="text-gray-600 text-center italic text-sm">
                   Prescription details and medications will be filled by the doctor.
                 </p>
               </div>
             </div>
 
             {/* Footer */}
-            <div className="flex justify-between items-end pt-4 border-t border-border/40">
-              <div className="text-xs text-medical-gray">
+            <div className="flex justify-between items-end pt-4 border-t border-gray-200">
+              <div className="text-xs text-gray-600">
                 <p>Generated on {new Date().toLocaleString()}</p>
                 <p>This is a computer-generated prescription.</p>
               </div>
               <div className="text-right space-y-1">
-                <div className="w-40 border-b border-border/60 pb-1 h-8">
-                  <p className="text-xs text-medical-gray">Doctor's Signature</p>
+                <div className="w-40 border-b border-gray-300 pb-1 h-8">
+                  <p className="text-xs text-gray-600">Doctor's Signature</p>
                 </div>
-                <p className="text-xs text-medical-gray">Date: {new Date().toLocaleDateString()}</p>
+                <p className="text-xs text-gray-600">Date: {new Date().toLocaleDateString()}</p>
               </div>
             </div>
           </CardContent>

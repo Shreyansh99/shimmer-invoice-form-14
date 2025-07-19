@@ -7,6 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Search, Download, FileText, RefreshCw, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -24,62 +25,40 @@ const Prescriptions = () => {
   const itemsPerPage = 10;
   const { toast } = useToast();
 
-  // Mock data for demonstration
+  // Fetch prescriptions from Supabase
   useEffect(() => {
-    const mockData: PrescriptionData[] = [
-      {
-        id: "1",
-        registration_number: "REG001",
-        name: "John Doe",
-        age: 35,
-        gender: "male",
-        department: "Cardiology",
-        type: "General",
-        address: "123 Main St, City",
-        aadhar_number: "1234-5678-9012",
-        mobile_number: "+91-9876543210",
-        created_at: new Date().toISOString()
-      },
-      {
-        id: "2",
-        registration_number: "REG002",
-        name: "Jane Smith",
-        age: 28,
-        gender: "female",
-        department: "Gynecology",
-        type: "ANC",
-        address: "456 Oak Ave, Town",
-        aadhar_number: "2345-6789-0123",
-        mobile_number: "+91-9876543211",
-        created_at: new Date(Date.now() - 86400000).toISOString()
-      },
-      {
-        id: "3",
-        registration_number: "REG003",
-        name: "Bob Johnson",
-        age: 42,
-        gender: "male",
-        department: "Orthopedics",
-        type: "JSSK",
-        address: "789 Pine Rd, Village",
-        aadhar_number: "3456-7890-1234",
-        mobile_number: "+91-9876543212",
-        created_at: new Date(Date.now() - 172800000).toISOString()
-      }
-    ];
-    
-    setTimeout(() => {
-      setPrescriptions(mockData);
-      setFilteredPrescriptions(mockData);
-      setLoading(false);
-    }, 1000);
+    fetchPrescriptions();
   }, []);
+
+  const fetchPrescriptions = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("prescriptions")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      setPrescriptions(data || []);
+      setFilteredPrescriptions(data || []);
+    } catch (error) {
+      console.error("Error fetching prescriptions:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch prescriptions. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter prescriptions based on search and filters
   useEffect(() => {
     let filtered = prescriptions.filter(prescription => {
       const matchesSearch = prescription.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           prescription.registration_number.toLowerCase().includes(searchTerm.toLowerCase());
+                           String(prescription.registration_number).includes(searchTerm);
       const matchesGender = !genderFilter || prescription.gender === genderFilter;
       const matchesDepartment = !departmentFilter || prescription.department === departmentFilter;
       const matchesType = !typeFilter || prescription.type === typeFilter;
@@ -99,21 +78,17 @@ const Prescriptions = () => {
   };
 
   const refreshData = () => {
-    setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      toast({
-        title: "Data refreshed",
-        description: "Prescription data has been updated.",
-      });
-    }, 1000);
+    fetchPrescriptions();
+    toast({
+      title: "Data refreshed",
+      description: "Prescription data has been updated.",
+    });
   };
 
   const exportToExcel = () => {
     try {
       const exportData = filteredPrescriptions.map(prescription => ({
-        'Registration Number': prescription.registration_number,
+        'Registration Number': String(prescription.registration_number).padStart(6, '0'),
         'Patient Name': prescription.name,
         'Age': prescription.age,
         'Gender': prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
@@ -165,7 +140,7 @@ const Prescriptions = () => {
       
       // Add title
       doc.setFontSize(20);
-      doc.setTextColor(79, 70, 229);
+      doc.setTextColor(37, 99, 235);
       doc.text('Hospital Prescription System', 20, 20);
       
       doc.setFontSize(16);
@@ -179,7 +154,7 @@ const Prescriptions = () => {
 
       // Prepare table data
       const tableData = filteredPrescriptions.map(prescription => [
-        prescription.registration_number,
+        String(prescription.registration_number).padStart(6, '0'),
         prescription.name,
         prescription.age.toString(),
         prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
@@ -199,7 +174,7 @@ const Prescriptions = () => {
           cellPadding: 3,
         },
         headStyles: {
-          fillColor: [79, 70, 229],
+          fillColor: [37, 99, 235],
           textColor: 255,
           fontStyle: 'bold',
         },
@@ -250,23 +225,23 @@ const Prescriptions = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-medical-blue mx-auto mb-4"></div>
-          <p className="text-medical-gray">Loading prescriptions...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading prescriptions...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
+    <div className="min-h-screen bg-white p-4">
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-medical-dark">Prescriptions</h1>
-            <p className="text-medical-gray">Manage and view all patient prescriptions</p>
+            <h1 className="text-3xl font-bold text-gray-900">Prescriptions</h1>
+            <p className="text-gray-600">Manage and view all patient prescriptions</p>
           </div>
           <div className="flex gap-2">
             <Button onClick={refreshData} variant="outline" size="sm">
@@ -277,7 +252,7 @@ const Prescriptions = () => {
         </div>
 
         {/* Filters */}
-        <Card>
+        <Card className="border-gray-200">
           <CardHeader>
             <CardTitle className="text-lg">Filters & Search</CardTitle>
           </CardHeader>
@@ -289,12 +264,12 @@ const Prescriptions = () => {
                   placeholder="Search by name or registration..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
               
               <Select value={genderFilter} onValueChange={setGenderFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue placeholder="Filter by Gender" />
                 </SelectTrigger>
                 <SelectContent>
@@ -305,20 +280,30 @@ const Prescriptions = () => {
               </Select>
 
               <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue placeholder="Filter by Department" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="Cardiology">Cardiology</SelectItem>
+                  <SelectItem value="Dermatology">Dermatology</SelectItem>
+                  <SelectItem value="Emergency">Emergency</SelectItem>
+                  <SelectItem value="ENT">ENT</SelectItem>
+                  <SelectItem value="Gastroenterology">Gastroenterology</SelectItem>
+                  <SelectItem value="General Medicine">General Medicine</SelectItem>
                   <SelectItem value="Gynecology">Gynecology</SelectItem>
+                  <SelectItem value="Neurology">Neurology</SelectItem>
+                  <SelectItem value="Oncology">Oncology</SelectItem>
                   <SelectItem value="Orthopedics">Orthopedics</SelectItem>
                   <SelectItem value="Pediatrics">Pediatrics</SelectItem>
-                  <SelectItem value="General Medicine">General Medicine</SelectItem>
+                  <SelectItem value="Psychiatry">Psychiatry</SelectItem>
+                  <SelectItem value="Radiology">Radiology</SelectItem>
+                  <SelectItem value="Surgery">Surgery</SelectItem>
+                  <SelectItem value="Urology">Urology</SelectItem>
                 </SelectContent>
               </Select>
 
               <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                   <SelectValue placeholder="Filter by Type" />
                 </SelectTrigger>
                 <SelectContent>
@@ -338,7 +323,7 @@ const Prescriptions = () => {
 
         {/* Results Summary & Export */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <p className="text-sm text-medical-gray">
+          <p className="text-sm text-gray-600">
             Showing {startIndex + 1}-{Math.min(endIndex, filteredPrescriptions.length)} of {filteredPrescriptions.length} prescriptions
           </p>
           <div className="flex gap-2">
@@ -354,7 +339,7 @@ const Prescriptions = () => {
         </div>
 
         {/* Prescriptions Table */}
-        <Card>
+        <Card className="border-gray-200">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>
@@ -372,7 +357,7 @@ const Prescriptions = () => {
                 <TableBody>
                   {currentPrescriptions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-medical-gray">
+                      <TableCell colSpan={7} className="text-center py-8 text-gray-600">
                         No prescriptions found matching your criteria.
                       </TableCell>
                     </TableRow>
@@ -380,7 +365,7 @@ const Prescriptions = () => {
                     currentPrescriptions.map((prescription) => (
                       <TableRow key={prescription.id} className="hover:bg-gray-50">
                         <TableCell className="text-center font-mono text-sm">
-                          #{prescription.registration_number}
+                          #{String(prescription.registration_number).padStart(6, '0')}
                         </TableCell>
                         <TableCell className="font-medium">
                           {prescription.name}
@@ -399,7 +384,7 @@ const Prescriptions = () => {
                             {prescription.type}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-center text-sm text-medical-gray">
+                        <TableCell className="text-center text-sm text-gray-600">
                           {new Date(prescription.created_at).toLocaleDateString()}
                         </TableCell>
                       </TableRow>
@@ -429,7 +414,7 @@ const Prescriptions = () => {
                 onClick={() => setCurrentPage(page)}
                 variant={currentPage === page ? "default" : "outline"}
                 size="sm"
-                className={currentPage === page ? "bg-medical-blue hover:bg-medical-blue/90" : ""}
+                className={currentPage === page ? "bg-blue-600 hover:bg-blue-700" : ""}
               >
                 {page}
               </Button>

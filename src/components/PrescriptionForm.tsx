@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, FileText } from "lucide-react";
+import { Loader2, FileText, Calendar, Hash } from "lucide-react";
 import type { PrescriptionData } from "@/types/prescription";
 
 const prescriptionSchema = z.object({
@@ -39,6 +39,7 @@ const departments = [
 export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentDateTime, setCurrentDateTime] = useState(new Date());
+  const [nextRegistrationNumber, setNextRegistrationNumber] = useState<number | null>(null);
   const { toast } = useToast();
 
   const form = useForm<PrescriptionFormData>({
@@ -60,6 +61,28 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
       setCurrentDateTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  useEffect(() => {
+    const fetchNextRegistrationNumber = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("prescriptions")
+          .select("registration_number")
+          .order("registration_number", { ascending: false })
+          .limit(1);
+
+        if (error) throw error;
+
+        const nextNumber = data && data.length > 0 ? data[0].registration_number + 1 : 1;
+        setNextRegistrationNumber(nextNumber);
+      } catch (error) {
+        console.error("Error fetching registration number:", error);
+        setNextRegistrationNumber(1);
+      }
+    };
+
+    fetchNextRegistrationNumber();
   }, []);
 
   const handleSubmit = async (data: PrescriptionFormData) => {
@@ -89,6 +112,7 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
 
       onSubmit(prescription as PrescriptionData);
       form.reset();
+      setNextRegistrationNumber(prev => prev ? prev + 1 : 1);
     } catch (error) {
       console.error("Error creating prescription:", error);
       toast({
@@ -102,28 +126,37 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto border-border/40 shadow-lg">
-      <CardHeader className="text-center border-b border-border/40 bg-gradient-to-r from-medical-blue/5 to-medical-blue-light/5">
+    <div className="min-h-screen bg-white p-4">
+      <Card className="w-full max-w-4xl mx-auto shadow-lg border border-gray-200">
+        <CardHeader className="text-center border-b border-gray-200 bg-blue-50">
         <div className="flex items-center justify-center gap-2 mb-2">
-          <FileText className="h-8 w-8 text-medical-blue" />
-          <CardTitle className="text-2xl font-bold text-medical-dark">
+          <FileText className="h-8 w-8 text-blue-600" />
+          <CardTitle className="text-2xl font-bold text-gray-900">
             Hospital Prescription Form
           </CardTitle>
         </div>
-        <CardDescription className="text-medical-gray">
+        <CardDescription className="text-gray-600">
           Fill out patient information to generate a prescription
         </CardDescription>
       </CardHeader>
       
       <CardContent className="p-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-muted/50 rounded-lg">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
           <div>
-            <span className="text-sm font-medium text-medical-gray">Registration Number:</span>
-            <p className="text-lg font-semibold text-medical-dark">Auto-generated</p>
+            <div className="flex items-center gap-2 mb-1">
+              <Hash className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-gray-600">Registration Number:</span>
+            </div>
+            <p className="text-lg font-semibold text-gray-900">
+              {nextRegistrationNumber ? String(nextRegistrationNumber).padStart(6, '0') : 'Loading...'}
+            </p>
           </div>
           <div>
-            <span className="text-sm font-medium text-medical-gray">Date & Time:</span>
-            <p className="text-lg font-semibold text-medical-dark">
+            <div className="flex items-center gap-2 mb-1">
+              <Calendar className="h-4 w-4 text-blue-600" />
+              <span className="text-sm font-medium text-gray-600">Date & Time:</span>
+            </div>
+            <p className="text-lg font-semibold text-gray-900">
               {currentDateTime.toLocaleString()}
             </p>
           </div>
@@ -137,14 +170,14 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-medical-dark font-medium">
+                    <FormLabel className="text-gray-900 font-medium">
                       Patient Name *
                     </FormLabel>
                     <FormControl>
                       <Input 
                         placeholder="Enter patient name" 
                         {...field}
-                        className="border-border/60 focus:border-medical-blue"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       />
                     </FormControl>
                     <FormMessage />
@@ -157,14 +190,14 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
                 name="age"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-medical-dark font-medium">Age *</FormLabel>
+                    <FormLabel className="text-gray-900 font-medium">Age *</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
                         placeholder="Enter age"
                         {...field}
                         onChange={(e) => field.onChange(parseInt(e.target.value) || "")}
-                        className="border-border/60 focus:border-medical-blue"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       />
                     </FormControl>
                     <FormMessage />
@@ -177,10 +210,10 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
                 name="gender"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-medical-dark font-medium">Gender *</FormLabel>
+                    <FormLabel className="text-gray-900 font-medium">Gender *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="border-border/60 focus:border-medical-blue">
+                        <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                           <SelectValue placeholder="Select gender" />
                         </SelectTrigger>
                       </FormControl>
@@ -200,10 +233,10 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
                 name="department"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-medical-dark font-medium">Department *</FormLabel>
+                    <FormLabel className="text-gray-900 font-medium">Department *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="border-border/60 focus:border-medical-blue">
+                        <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                           <SelectValue placeholder="Select department" />
                         </SelectTrigger>
                       </FormControl>
@@ -225,10 +258,10 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
                 name="type"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-medical-dark font-medium">Type *</FormLabel>
+                    <FormLabel className="text-gray-900 font-medium">Type *</FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
-                        <SelectTrigger className="border-border/60 focus:border-medical-blue">
+                        <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
                           <SelectValue placeholder="Select type" />
                         </SelectTrigger>
                       </FormControl>
@@ -248,12 +281,12 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
                 name="mobile_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-medical-dark font-medium">Mobile Number</FormLabel>
+                    <FormLabel className="text-gray-900 font-medium">Mobile Number</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Enter mobile number"
                         {...field}
-                        className="border-border/60 focus:border-medical-blue"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       />
                     </FormControl>
                     <FormMessage />
@@ -268,11 +301,11 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-medical-dark font-medium">Address</FormLabel>
+                    <FormLabel className="text-gray-900 font-medium">Address</FormLabel>
                     <FormControl>
                       <Textarea
                         placeholder="Enter address"
-                        className="min-h-[100px] border-border/60 focus:border-medical-blue"
+                        className="min-h-[100px] border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                         {...field}
                       />
                     </FormControl>
@@ -286,12 +319,12 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
                 name="aadhar_number"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-medical-dark font-medium">Aadhar Number</FormLabel>
+                    <FormLabel className="text-gray-900 font-medium">Aadhar Number</FormLabel>
                     <FormControl>
                       <Input
                         placeholder="Enter Aadhar number"
                         {...field}
-                        className="border-border/60 focus:border-medical-blue"
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
                       />
                     </FormControl>
                     <FormMessage />
@@ -304,7 +337,7 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                className="w-full md:w-auto px-8 py-3 bg-medical-blue hover:bg-medical-blue/90 text-white font-semibold shadow-lg"
+                className="w-full md:w-auto px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-lg"
               >
                 {isSubmitting ? (
                   <>
@@ -320,5 +353,6 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
         </Form>
       </CardContent>
     </Card>
+    </div>
   );
 };
