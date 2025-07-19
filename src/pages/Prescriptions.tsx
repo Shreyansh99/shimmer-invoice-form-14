@@ -251,15 +251,6 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
           
           <div className="flex gap-3">
             <Button
-              onClick={onEdit}
-              variant="outline"
-              className="flex items-center gap-2 border-border/60 hover:bg-muted/50"
-            >
-              <Edit className="h-4 w-4" />
-              Edit Prescription
-            </Button>
-            
-            <Button
               onClick={handlePrint}
               className="flex items-center gap-2 bg-medical-blue hover:bg-medical-blue/90 text-white"
             >
