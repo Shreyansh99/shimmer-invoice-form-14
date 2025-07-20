@@ -120,6 +120,7 @@ const Prescriptions = () => {
         prescription.name,
         prescription.age.toString(),
         prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
+        prescription.room_number || 'N/A',
         prescription.department,
         prescription.type,
         prescription.mobile_number || 'N/A',
@@ -132,7 +133,7 @@ const Prescriptions = () => {
 
       // Create table
       autoTable(doc, {
-        head: [['Reg. No.', 'Patient Name', 'Age', 'Gender', 'Department', 'Type', 'Mobile', 'Date']],
+        head: [['Reg. No.', 'Patient Name', 'Age', 'Gender', 'Room', 'Department', 'Type', 'Mobile', 'Date']],
         body: tableData,
         startY: 40,
         theme: 'grid',
@@ -153,10 +154,11 @@ const Prescriptions = () => {
           1: { cellWidth: 40, halign: 'left' },   // Patient Name
           2: { cellWidth: 12, halign: 'center' }, // Age
           3: { cellWidth: 16, halign: 'center' }, // Gender
-          4: { cellWidth: 30, halign: 'left' },   // Department
-          5: { cellWidth: 16, halign: 'center' }, // Type
-          6: { cellWidth: 22, halign: 'center' }, // Mobile
-          7: { cellWidth: 20, halign: 'center' }  // Date
+          4: { cellWidth: 14, halign: 'center' }, // Room
+          5: { cellWidth: 26, halign: 'left' },   // Department
+          6: { cellWidth: 14, halign: 'center' }, // Type
+          7: { cellWidth: 20, halign: 'center' }, // Mobile
+          8: { cellWidth: 18, halign: 'center' }  // Date
         },
         alternateRowStyles: {
           fillColor: [248, 250, 252] // Light gray for alternate rows
@@ -194,9 +196,9 @@ const Prescriptions = () => {
         'Patient Name': prescription.name,
         'Age': prescription.age,
         'Gender': prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
+        'Room Number': prescription.room_number || 'N/A',
         'Department': prescription.department,
         'Type': prescription.type,
-        'Room Number': prescription.room_number || 'N/A',
         'Mobile Number': prescription.mobile_number || 'N/A',
         'Address': prescription.address || 'N/A',
         'Aadhar Number': prescription.aadhar_number || 'N/A',
@@ -327,23 +329,50 @@ const Prescriptions = () => {
               {/* Gender Filter */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Gender</label>
-                <Select value={genderFilter.length > 0 ? genderFilter.join(',') : 'all'} onValueChange={(value) => {
-                  if (value === 'all') {
-                    setGenderFilter([]);
-                  } else {
-                    setGenderFilter([value]);
-                  }
-                }}>
-                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                    <SelectValue placeholder="Filter by Gender" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Genders</SelectItem>
-                    <SelectItem value="male">Male</SelectItem>
-                    <SelectItem value="female">Female</SelectItem>
-                    <SelectItem value="others">Others</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="male"
+                      checked={genderFilter.includes('male')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setGenderFilter([...genderFilter, 'male']);
+                        } else {
+                          setGenderFilter(genderFilter.filter(g => g !== 'male'));
+                        }
+                      }}
+                    />
+                    <label htmlFor="male" className="text-sm text-gray-700">Male</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="female"
+                      checked={genderFilter.includes('female')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setGenderFilter([...genderFilter, 'female']);
+                        } else {
+                          setGenderFilter(genderFilter.filter(g => g !== 'female'));
+                        }
+                      }}
+                    />
+                    <label htmlFor="female" className="text-sm text-gray-700">Female</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="others"
+                      checked={genderFilter.includes('others')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setGenderFilter([...genderFilter, 'others']);
+                        } else {
+                          setGenderFilter(genderFilter.filter(g => g !== 'others'));
+                        }
+                      }}
+                    />
+                    <label htmlFor="others" className="text-sm text-gray-700">Others</label>
+                  </div>
+                </div>
               </div>
 
               {/* Department Filter */}
@@ -377,23 +406,50 @@ const Prescriptions = () => {
               {/* Type Filter */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Type</label>
-                <Select value={typeFilter.length > 0 ? typeFilter.join(',') : 'all'} onValueChange={(value) => {
-                  if (value === 'all') {
-                    setTypeFilter([]);
-                  } else {
-                    setTypeFilter([value]);
-                  }
-                }}>
-                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                    <SelectValue placeholder="Filter by Type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Types</SelectItem>
-                    <SelectItem value="ANC">ANC</SelectItem>
-                    <SelectItem value="General">General</SelectItem>
-                    <SelectItem value="JSSK">JSSK</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="space-y-2">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="anc"
+                      checked={typeFilter.includes('ANC')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setTypeFilter([...typeFilter, 'ANC']);
+                        } else {
+                          setTypeFilter(typeFilter.filter(t => t !== 'ANC'));
+                        }
+                      }}
+                    />
+                    <label htmlFor="anc" className="text-sm text-gray-700">ANC</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="general"
+                      checked={typeFilter.includes('General')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setTypeFilter([...typeFilter, 'General']);
+                        } else {
+                          setTypeFilter(typeFilter.filter(t => t !== 'General'));
+                        }
+                      }}
+                    />
+                    <label htmlFor="general" className="text-sm text-gray-700">General</label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="jssk"
+                      checked={typeFilter.includes('JSSK')}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          setTypeFilter([...typeFilter, 'JSSK']);
+                        } else {
+                          setTypeFilter(typeFilter.filter(t => t !== 'JSSK'));
+                        }
+                      }}
+                    />
+                    <label htmlFor="jssk" className="text-sm text-gray-700">JSSK</label>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -447,6 +503,7 @@ const Prescriptions = () => {
                     <TableHead className="min-w-48 font-semibold text-gray-900">Patient Name</TableHead>
                     <TableHead className="w-20 text-center font-semibold text-gray-900">Age</TableHead>
                     <TableHead className="w-24 text-center font-semibold text-gray-900">Gender</TableHead>
+                    <TableHead className="w-24 text-center font-semibold text-gray-900">Room No.</TableHead>
                     <TableHead className="min-w-32 font-semibold text-gray-900">Department</TableHead>
                     <TableHead className="w-24 text-center font-semibold text-gray-900">Type</TableHead>
                     <TableHead className="w-32 text-center font-semibold text-gray-900">Date</TableHead>
@@ -455,7 +512,7 @@ const Prescriptions = () => {
                 <TableBody>
                   {filteredPrescriptions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12 text-gray-600">
+                      <TableCell colSpan={8} className="text-center py-12 text-gray-600">
                         <div className="flex flex-col items-center gap-2">
                           <FileText className="h-12 w-12 text-gray-400" />
                           <p className="text-lg font-medium">No prescriptions found</p>
@@ -482,6 +539,9 @@ const Prescriptions = () => {
                         </TableCell>
                         <TableCell className="text-center capitalize text-gray-700">
                           {prescription.gender}
+                        </TableCell>
+                        <TableCell className="text-center text-gray-700">
+                          {prescription.room_number || 'N/A'}
                         </TableCell>
                         <TableCell className="text-gray-700">
                           {prescription.department}
