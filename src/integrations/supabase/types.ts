@@ -27,6 +27,10 @@ export type Database = {
           mobile_number: string | null
           name: string
           registration_number: number
+<<<<<<< HEAD
+=======
+          type: string
+>>>>>>> parent of 29c7e77 (Add room number field and improve filters)
           updated_at: string
         }
         Insert: {
@@ -40,7 +44,11 @@ export type Database = {
           mobile_number?: string | null
           name: string
           registration_number?: number
+<<<<<<< HEAD
           room_number?: string | null
+=======
+          type: string
+>>>>>>> parent of 29c7e77 (Add room number field and improve filters)
           updated_at?: string
         }
         Update: {
@@ -54,7 +62,6 @@ export type Database = {
           mobile_number?: string | null
           name?: string
           registration_number?: number
-          room_number?: string | null
           type?: string
           updated_at?: string
         }
