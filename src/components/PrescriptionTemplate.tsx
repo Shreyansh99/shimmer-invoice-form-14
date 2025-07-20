@@ -372,13 +372,6 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
                     </div>
                   )}
                 </div>
-                  {prescriptionData.room_number && (
-                    <div className="flex">
-                      <span className="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Room No:</span>
-                      <span className="text-sm text-gray-900">{prescriptionData.room_number}</span>
-                    </div>
-                  )}
-                </div>
               </div>
               
               <div className="space-y-3">
