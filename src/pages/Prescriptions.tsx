@@ -20,7 +20,7 @@ const Prescriptions = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [genderFilter, setGenderFilter] = useState<string[]>([]);
-  const [departmentFilter, setDepartmentFilter] = useState("");
+  const [departmentFilter, setDepartmentFilter] = useState("all");
   const [typeFilter, setTypeFilter] = useState<string[]>([]);
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
@@ -62,7 +62,7 @@ const Prescriptions = () => {
                            String(prescription.registration_number).includes(searchTerm);
       
       const matchesGender = genderFilter.length === 0 || genderFilter.includes(prescription.gender);
-      const matchesDepartment = !departmentFilter || prescription.department === departmentFilter;
+      const matchesDepartment = departmentFilter === "all" || prescription.department === departmentFilter;
       const matchesType = typeFilter.length === 0 || typeFilter.includes(prescription.type);
       
       // Date filtering
@@ -85,7 +85,7 @@ const Prescriptions = () => {
   const clearFilters = () => {
     setSearchTerm("");
     setGenderFilter([]);
-    setDepartmentFilter("");
+    setDepartmentFilter("all");
     setTypeFilter([]);
     setDateFromFilter("");
     setDateToFilter("");
@@ -373,7 +373,7 @@ const Prescriptions = () => {
                     <SelectValue placeholder="Filter by Department" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Departments</SelectItem>
+                    <SelectItem value="all">All Departments</SelectItem>
                     <SelectItem value="Cardiology">Cardiology</SelectItem>
                     <SelectItem value="Dermatology">Dermatology</SelectItem>
                     <SelectItem value="Emergency">Emergency</SelectItem>
