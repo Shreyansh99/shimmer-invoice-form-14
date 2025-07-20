@@ -17,6 +17,7 @@ export type Database = {
       prescriptions: {
         Row: {
           aadhar_number: string | null
+          room_number: string | null
           address: string | null
           age: number
           created_at: string
@@ -26,8 +27,6 @@ export type Database = {
           mobile_number: string | null
           name: string
           registration_number: number
-          room_number: string | null
-          type: string
           updated_at: string
         }
         Insert: {
@@ -42,7 +41,6 @@ export type Database = {
           name: string
           registration_number?: number
           room_number?: string | null
-          type: string
           updated_at?: string
         }
         Update: {
