@@ -99,22 +99,6 @@ const Prescriptions = () => {
     });
   };
 
-  const handleGenderChange = (gender: string, checked: boolean) => {
-    if (checked) {
-      setGenderFilter(prev => [...prev, gender]);
-    } else {
-      setGenderFilter(prev => prev.filter(g => g !== gender));
-    }
-  };
-
-  const handleTypeChange = (type: string, checked: boolean) => {
-    if (checked) {
-      setTypeFilter(prev => [...prev, type]);
-    } else {
-      setTypeFilter(prev => prev.filter(t => t !== type));
-    }
-  };
-
   const exportToPDF = () => {
     try {
       const doc = new jsPDF('landscape', 'mm', 'a4');
@@ -346,23 +330,23 @@ const Prescriptions = () => {
               {/* Gender Filter */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Gender</label>
-                <div className="space-y-2 p-3 border border-gray-300 rounded-md bg-white">
-                  {['male', 'female', 'others'].map((gender) => (
-                    <div key={gender} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`gender-${gender}`}
-                        checked={genderFilter.includes(gender)}
-                        onCheckedChange={(checked) => handleGenderChange(gender, checked as boolean)}
-                      />
-                      <label
-                        htmlFor={`gender-${gender}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 capitalize"
-                      >
-                        {gender}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                <Select value={genderFilter.length > 0 ? genderFilter.join(',') : 'all'} onValueChange={(value) => {
+                  if (value === 'all') {
+                    setGenderFilter([]);
+                  } else {
+                    setGenderFilter([value]);
+                  }
+                }}>
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Filter by Gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genders</SelectItem>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="others">Others</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
 
               {/* Department Filter */}
@@ -396,23 +380,23 @@ const Prescriptions = () => {
               {/* Type Filter */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Type</label>
-                <div className="space-y-2 p-3 border border-gray-300 rounded-md bg-white">
-                  {['ANC', 'General', 'JSSK'].map((type) => (
-                    <div key={type} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`type-${type}`}
-                        checked={typeFilter.includes(type)}
-                        onCheckedChange={(checked) => handleTypeChange(type, checked as boolean)}
-                      />
-                      <label
-                        htmlFor={`type-${type}`}
-                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-                      >
-                        {type}
-                      </label>
-                    </div>
-                  ))}
-                </div>
+                <Select value={typeFilter.length > 0 ? typeFilter.join(',') : 'all'} onValueChange={(value) => {
+                  if (value === 'all') {
+                    setTypeFilter([]);
+                  } else {
+                    setTypeFilter([value]);
+                  }
+                }}>
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Filter by Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="ANC">ANC</SelectItem>
+                    <SelectItem value="General">General</SelectItem>
+                    <SelectItem value="JSSK">JSSK</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
