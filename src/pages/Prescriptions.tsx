@@ -218,6 +218,7 @@ const Prescriptions = () => {
         { wch: 25 }, // Patient Name
         { wch: 8 },  // Age
         { wch: 10 }, // Gender
+        { wch: 12 }, // Room Number
         { wch: 20 }, // Department
         { wch: 10 }, // Type
         { wch: 15 }, // Mobile Number
@@ -539,9 +540,6 @@ const Prescriptions = () => {
                         </TableCell>
                         <TableCell className="text-center capitalize text-gray-700">
                           {prescription.gender}
-                        </TableCell>
-                        <TableCell className="text-center text-gray-700">
-                          {prescription.room_number || 'N/A'}
                         </TableCell>
                         <TableCell className="text-center text-gray-700">
                           {prescription.room_number || 'N/A'}
