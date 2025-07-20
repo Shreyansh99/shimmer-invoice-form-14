@@ -199,3 +199,150 @@ export const Constants = {
     Enums: {},
   },
 } as const
+
+import React, { useState } from 'react';
+import { Button } from './ui/button';
+import { Input } from './ui/input';
+import { Label } from './ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
+
+interface PrescriptionFormProps {
+  onSubmit: (data: any) => void;
+}
+
+export function PrescriptionForm({ onSubmit }: PrescriptionFormProps) {
+  const [formData, setFormData] = useState({
+    name: '',
+    age: '',
+    gender: '',
+    department: '',
+    mobile_number: '',
+    aadhar_number: '',
+    address: '',
+    room_number: '',
+    type: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  const handleChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <Card className="w-full max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>New Prescription</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="name">Name</Label>
+              <Input
+                id="name"
+                value={formData.name}
+                onChange={(e) => handleChange('name', e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="age">Age</Label>
+              <Input
+                id="age"
+                type="number"
+                value={formData.age}
+                onChange={(e) => handleChange('age', e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="gender">Gender</Label>
+              <Select value={formData.gender} onValueChange={(value) => handleChange('gender', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select gender" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label htmlFor="department">Department</Label>
+              <Input
+                id="department"
+                value={formData.department}
+                onChange={(e) => handleChange('department', e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="mobile">Mobile Number</Label>
+              <Input
+                id="mobile"
+                value={formData.mobile_number}
+                onChange={(e) => handleChange('mobile_number', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="aadhar">Aadhar Number</Label>
+              <Input
+                id="aadhar"
+                value={formData.aadhar_number}
+                onChange={(e) => handleChange('aadhar_number', e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div>
+            <Label htmlFor="address">Address</Label>
+            <Input
+              id="address"
+              value={formData.address}
+              onChange={(e) => handleChange('address', e.target.value)}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="room">Room Number</Label>
+              <Input
+                id="room"
+                value={formData.room_number}
+                onChange={(e) => handleChange('room_number', e.target.value)}
+              />
+            </div>
+            <div>
+              <Label htmlFor="type">Type</Label>
+              <Select value={formData.type} onValueChange={(value) => handleChange('type', value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="inpatient">Inpatient</SelectItem>
+                  <SelectItem value="outpatient">Outpatient</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Button type="submit" className="w-full">
+            Create Prescription
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
