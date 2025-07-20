@@ -543,6 +543,9 @@ const Prescriptions = () => {
                         <TableCell className="text-center text-gray-700">
                           {prescription.room_number || 'N/A'}
                         </TableCell>
+                        <TableCell className="text-center text-gray-700">
+                          {prescription.room_number || 'N/A'}
+                        </TableCell>
                         <TableCell className="text-gray-700">
                           {prescription.department}
                         </TableCell>
