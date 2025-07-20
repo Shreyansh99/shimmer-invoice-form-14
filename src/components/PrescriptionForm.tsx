@@ -19,6 +19,7 @@ const prescriptionSchema = z.object({
   gender: z.enum(["male", "female", "others"], { required_error: "Please select gender" }),
   department: z.string().min(1, "Department is required"),
   type: z.enum(["ANC", "General", "JSSK"], { required_error: "Please select type" }),
+  room_number: z.string().optional(),
   address: z.string().optional(),
   aadhar_number: z.string().optional(),
   mobile_number: z.string().optional(),
@@ -50,6 +51,7 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
       gender: undefined,
       department: "",
       type: undefined,
+      room_number: "",
       address: "",
       aadhar_number: "",
       mobile_number: "",
@@ -96,6 +98,7 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
           gender: data.gender,
           department: data.department,
           type: data.type,
+          room_number: data.room_number || null,
           address: data.address || null,
           aadhar_number: data.aadhar_number || null,
           mobile_number: data.mobile_number || null,
@@ -271,6 +274,24 @@ export const PrescriptionForm = ({ onSubmit }: PrescriptionFormProps) => {
                         <SelectItem value="JSSK">JSSK</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="room_number"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-gray-900 font-medium">Room No</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="Enter room number"
+                        {...field}
+                        className="border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}

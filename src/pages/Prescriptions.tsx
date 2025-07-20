@@ -5,7 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Search, FileText, RefreshCw, X, Download } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Search, FileText, RefreshCw, X, Download, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
@@ -18,9 +19,11 @@ const Prescriptions = () => {
   const [filteredPrescriptions, setFilteredPrescriptions] = useState<PrescriptionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [genderFilter, setGenderFilter] = useState("");
-  const [departmentFilter, setDepartmentFilter] = useState("");
-  const [typeFilter, setTypeFilter] = useState("");
+  const [genderFilter, setGenderFilter] = useState<string[]>([]);
+  const [departmentFilter, setDepartmentFilter] = useState("all");
+  const [typeFilter, setTypeFilter] = useState<string[]>([]);
+  const [dateFromFilter, setDateFromFilter] = useState("");
+  const [dateToFilter, setDateToFilter] = useState("");
   const { toast } = useToast();
 
   // Fetch prescriptions from Supabase
@@ -57,21 +60,35 @@ const Prescriptions = () => {
     let filtered = prescriptions.filter(prescription => {
       const matchesSearch = prescription.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            String(prescription.registration_number).includes(searchTerm);
-      const matchesGender = !genderFilter || prescription.gender === genderFilter;
-      const matchesDepartment = !departmentFilter || prescription.department === departmentFilter;
-      const matchesType = !typeFilter || prescription.type === typeFilter;
       
-      return matchesSearch && matchesGender && matchesDepartment && matchesType;
+      const matchesGender = genderFilter.length === 0 || genderFilter.includes(prescription.gender);
+      const matchesDepartment = departmentFilter === "all" || prescription.department === departmentFilter;
+      const matchesType = typeFilter.length === 0 || typeFilter.includes(prescription.type);
+      
+      // Date filtering
+      let matchesDateRange = true;
+      if (dateFromFilter || dateToFilter) {
+        const prescriptionDate = new Date(prescription.created_at);
+        const fromDate = dateFromFilter ? new Date(dateFromFilter) : null;
+        const toDate = dateToFilter ? new Date(dateToFilter + 'T23:59:59') : null;
+        
+        if (fromDate && prescriptionDate < fromDate) matchesDateRange = false;
+        if (toDate && prescriptionDate > toDate) matchesDateRange = false;
+      }
+      
+      return matchesSearch && matchesGender && matchesDepartment && matchesType && matchesDateRange;
     });
     
     setFilteredPrescriptions(filtered);
-  }, [prescriptions, searchTerm, genderFilter, departmentFilter, typeFilter]);
+  }, [prescriptions, searchTerm, genderFilter, departmentFilter, typeFilter, dateFromFilter, dateToFilter]);
 
   const clearFilters = () => {
     setSearchTerm("");
-    setGenderFilter("");
-    setDepartmentFilter("");
-    setTypeFilter("");
+    setGenderFilter([]);
+    setDepartmentFilter("all");
+    setTypeFilter([]);
+    setDateFromFilter("");
+    setDateToFilter("");
   };
 
   const refreshData = () => {
@@ -105,6 +122,7 @@ const Prescriptions = () => {
         prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
         prescription.department,
         prescription.type,
+        prescription.room_number || 'N/A',
         prescription.mobile_number || 'N/A',
         new Date(prescription.created_at).toLocaleDateString('en-IN', {
           year: 'numeric',
@@ -115,7 +133,7 @@ const Prescriptions = () => {
 
       // Create table
       autoTable(doc, {
-        head: [['Reg. No.', 'Patient Name', 'Age', 'Gender', 'Department', 'Type', 'Mobile', 'Date']],
+        head: [['Reg. No.', 'Patient Name', 'Age', 'Gender', 'Department', 'Type', 'Room No.', 'Mobile', 'Date']],
         body: tableData,
         startY: 40,
         theme: 'grid',
@@ -133,13 +151,14 @@ const Prescriptions = () => {
         },
         columnStyles: {
           0: { cellWidth: 18, halign: 'center' }, // Reg. No.
-          1: { cellWidth: 45, halign: 'left' },   // Patient Name
+          1: { cellWidth: 40, halign: 'left' },   // Patient Name
           2: { cellWidth: 12, halign: 'center' }, // Age
-          3: { cellWidth: 18, halign: 'center' }, // Gender
-          4: { cellWidth: 35, halign: 'left' },   // Department
-          5: { cellWidth: 18, halign: 'center' }, // Type
-          6: { cellWidth: 25, halign: 'center' }, // Mobile
-          7: { cellWidth: 22, halign: 'center' }  // Date
+          3: { cellWidth: 16, halign: 'center' }, // Gender
+          4: { cellWidth: 30, halign: 'left' },   // Department
+          5: { cellWidth: 16, halign: 'center' }, // Type
+          6: { cellWidth: 18, halign: 'center' }, // Room No.
+          7: { cellWidth: 22, halign: 'center' }, // Mobile
+          8: { cellWidth: 20, halign: 'center' }  // Date
         },
         alternateRowStyles: {
           fillColor: [248, 250, 252] // Light gray for alternate rows
@@ -179,6 +198,7 @@ const Prescriptions = () => {
         'Gender': prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
         'Department': prescription.department,
         'Type': prescription.type,
+        'Room Number': prescription.room_number || 'N/A',
         'Mobile Number': prescription.mobile_number || 'N/A',
         'Address': prescription.address || 'N/A',
         'Aadhar Number': prescription.aadhar_number || 'N/A',
@@ -200,6 +220,7 @@ const Prescriptions = () => {
         { wch: 10 }, // Gender
         { wch: 20 }, // Department
         { wch: 10 }, // Type
+        { wch: 12 }, // Room Number
         { wch: 15 }, // Mobile Number
         { wch: 35 }, // Address
         { wch: 18 }, // Aadhar Number
@@ -269,7 +290,8 @@ const Prescriptions = () => {
             <CardTitle className="text-lg text-gray-900">Filters & Search</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4 p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Search and Date Range */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
@@ -280,54 +302,108 @@ const Prescriptions = () => {
                 />
               </div>
               
-              <Select value={genderFilter} onValueChange={setGenderFilter}>
-                <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue placeholder="Filter by Gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                  <SelectItem value="others">Others</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  type="date"
+                  placeholder="From Date"
+                  value={dateFromFilter}
+                  onChange={(e) => setDateFromFilter(e.target.value)}
+                  className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+              
+              <div className="relative">
+                <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  type="date"
+                  placeholder="To Date"
+                  value={dateToFilter}
+                  onChange={(e) => setDateToFilter(e.target.value)}
+                  className="pl-10 border-gray-300 focus:border-blue-500 focus:ring-blue-500"
+                />
+              </div>
+            </div>
 
-              <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
-                <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue placeholder="Filter by Department" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Cardiology">Cardiology</SelectItem>
-                  <SelectItem value="Dermatology">Dermatology</SelectItem>
-                  <SelectItem value="Emergency">Emergency</SelectItem>
-                  <SelectItem value="ENT">ENT</SelectItem>
-                  <SelectItem value="Gastroenterology">Gastroenterology</SelectItem>
-                  <SelectItem value="General Medicine">General Medicine</SelectItem>
-                  <SelectItem value="Gynecology">Gynecology</SelectItem>
-                  <SelectItem value="Neurology">Neurology</SelectItem>
-                  <SelectItem value="Oncology">Oncology</SelectItem>
-                  <SelectItem value="Orthopedics">Orthopedics</SelectItem>
-                  <SelectItem value="Pediatrics">Pediatrics</SelectItem>
-                  <SelectItem value="Psychiatry">Psychiatry</SelectItem>
-                  <SelectItem value="Radiology">Radiology</SelectItem>
-                  <SelectItem value="Surgery">Surgery</SelectItem>
-                  <SelectItem value="Urology">Urology</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Multi-select Filters */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Gender Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Gender</label>
+                <Select value={genderFilter.length > 0 ? genderFilter.join(',') : 'all'} onValueChange={(value) => {
+                  if (value === 'all') {
+                    setGenderFilter([]);
+                  } else {
+                    setGenderFilter([value]);
+                  }
+                }}>
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Filter by Gender" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Genders</SelectItem>
+                    <SelectItem value="male">Male</SelectItem>
+                    <SelectItem value="female">Female</SelectItem>
+                    <SelectItem value="others">Others</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
-                  <SelectValue placeholder="Filter by Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ANC">ANC</SelectItem>
-                  <SelectItem value="General">General</SelectItem>
-                  <SelectItem value="JSSK">JSSK</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Department Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Department</label>
+                <Select value={departmentFilter} onValueChange={setDepartmentFilter}>
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Filter by Department" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Departments</SelectItem>
+                    <SelectItem value="Cardiology">Cardiology</SelectItem>
+                    <SelectItem value="Dermatology">Dermatology</SelectItem>
+                    <SelectItem value="Emergency">Emergency</SelectItem>
+                    <SelectItem value="ENT">ENT</SelectItem>
+                    <SelectItem value="Gastroenterology">Gastroenterology</SelectItem>
+                    <SelectItem value="General Medicine">General Medicine</SelectItem>
+                    <SelectItem value="Gynecology">Gynecology</SelectItem>
+                    <SelectItem value="Neurology">Neurology</SelectItem>
+                    <SelectItem value="Oncology">Oncology</SelectItem>
+                    <SelectItem value="Orthopedics">Orthopedics</SelectItem>
+                    <SelectItem value="Pediatrics">Pediatrics</SelectItem>
+                    <SelectItem value="Psychiatry">Psychiatry</SelectItem>
+                    <SelectItem value="Radiology">Radiology</SelectItem>
+                    <SelectItem value="Surgery">Surgery</SelectItem>
+                    <SelectItem value="Urology">Urology</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
 
-              <Button onClick={clearFilters} variant="outline" className="w-full border-gray-300 hover:bg-gray-50">
+              {/* Type Filter */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Type</label>
+                <Select value={typeFilter.length > 0 ? typeFilter.join(',') : 'all'} onValueChange={(value) => {
+                  if (value === 'all') {
+                    setTypeFilter([]);
+                  } else {
+                    setTypeFilter([value]);
+                  }
+                }}>
+                  <SelectTrigger className="border-gray-300 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Filter by Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Types</SelectItem>
+                    <SelectItem value="ANC">ANC</SelectItem>
+                    <SelectItem value="General">General</SelectItem>
+                    <SelectItem value="JSSK">JSSK</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button onClick={clearFilters} variant="outline" className="border-gray-300 hover:bg-gray-50">
                 <X className="h-4 w-4 mr-2" />
-                Clear Filters
+                Clear All Filters
               </Button>
             </div>
           </CardContent>
@@ -376,13 +452,14 @@ const Prescriptions = () => {
                     <TableHead className="w-24 text-center font-semibold text-gray-900">Gender</TableHead>
                     <TableHead className="min-w-32 font-semibold text-gray-900">Department</TableHead>
                     <TableHead className="w-24 text-center font-semibold text-gray-900">Type</TableHead>
+                    <TableHead className="w-24 text-center font-semibold text-gray-900">Room No.</TableHead>
                     <TableHead className="w-32 text-center font-semibold text-gray-900">Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPrescriptions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-12 text-gray-600">
+                      <TableCell colSpan={8} className="text-center py-12 text-gray-600">
                         <div className="flex flex-col items-center gap-2">
                           <FileText className="h-12 w-12 text-gray-400" />
                           <p className="text-lg font-medium">No prescriptions found</p>
@@ -417,6 +494,9 @@ const Prescriptions = () => {
                           <Badge className={`text-xs font-medium ${getTypeColor(prescription.type)}`}>
                             {prescription.type}
                           </Badge>
+                        </TableCell>
+                        <TableCell className="text-center text-gray-700">
+                          {prescription.room_number || 'N/A'}
                         </TableCell>
                         <TableCell className="text-center text-sm text-gray-600">
                           {new Date(prescription.created_at).toLocaleDateString('en-IN', {
