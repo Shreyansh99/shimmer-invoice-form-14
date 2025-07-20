@@ -218,7 +218,6 @@ const Prescriptions = () => {
         { wch: 25 }, // Patient Name
         { wch: 8 },  // Age
         { wch: 10 }, // Gender
-        { wch: 12 }, // Room Number
         { wch: 20 }, // Department
         { wch: 10 }, // Type
         { wch: 15 }, // Mobile Number
