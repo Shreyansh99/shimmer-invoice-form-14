@@ -122,7 +122,6 @@ const Prescriptions = () => {
         prescription.gender.charAt(0).toUpperCase() + prescription.gender.slice(1),
         prescription.department,
         prescription.type,
-        prescription.room_number || 'N/A',
         prescription.mobile_number || 'N/A',
         new Date(prescription.created_at).toLocaleDateString('en-IN', {
           year: 'numeric',
@@ -133,7 +132,7 @@ const Prescriptions = () => {
 
       // Create table
       autoTable(doc, {
-        head: [['Reg. No.', 'Patient Name', 'Age', 'Gender', 'Department', 'Type', 'Room No.', 'Mobile', 'Date']],
+        head: [['Reg. No.', 'Patient Name', 'Age', 'Gender', 'Department', 'Type', 'Mobile', 'Date']],
         body: tableData,
         startY: 40,
         theme: 'grid',
@@ -156,9 +155,8 @@ const Prescriptions = () => {
           3: { cellWidth: 16, halign: 'center' }, // Gender
           4: { cellWidth: 30, halign: 'left' },   // Department
           5: { cellWidth: 16, halign: 'center' }, // Type
-          6: { cellWidth: 18, halign: 'center' }, // Room No.
-          7: { cellWidth: 22, halign: 'center' }, // Mobile
-          8: { cellWidth: 20, halign: 'center' }  // Date
+          6: { cellWidth: 22, halign: 'center' }, // Mobile
+          7: { cellWidth: 20, halign: 'center' }  // Date
         },
         alternateRowStyles: {
           fillColor: [248, 250, 252] // Light gray for alternate rows
@@ -220,7 +218,6 @@ const Prescriptions = () => {
         { wch: 10 }, // Gender
         { wch: 20 }, // Department
         { wch: 10 }, // Type
-        { wch: 12 }, // Room Number
         { wch: 15 }, // Mobile Number
         { wch: 35 }, // Address
         { wch: 18 }, // Aadhar Number
@@ -452,14 +449,13 @@ const Prescriptions = () => {
                     <TableHead className="w-24 text-center font-semibold text-gray-900">Gender</TableHead>
                     <TableHead className="min-w-32 font-semibold text-gray-900">Department</TableHead>
                     <TableHead className="w-24 text-center font-semibold text-gray-900">Type</TableHead>
-                    <TableHead className="w-24 text-center font-semibold text-gray-900">Room No.</TableHead>
                     <TableHead className="w-32 text-center font-semibold text-gray-900">Date</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredPrescriptions.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} className="text-center py-12 text-gray-600">
+                      <TableCell colSpan={7} className="text-center py-12 text-gray-600">
                         <div className="flex flex-col items-center gap-2">
                           <FileText className="h-12 w-12 text-gray-400" />
                           <p className="text-lg font-medium">No prescriptions found</p>
@@ -494,9 +490,6 @@ const Prescriptions = () => {
                           <Badge className={`text-xs font-medium ${getTypeColor(prescription.type)}`}>
                             {prescription.type}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-center text-gray-700">
-                          {prescription.room_number || 'N/A'}
                         </TableCell>
                         <TableCell className="text-center text-sm text-gray-600">
                           {new Date(prescription.created_at).toLocaleDateString('en-IN', {
