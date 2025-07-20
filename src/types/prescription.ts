@@ -1,6 +1,5 @@
 export interface PrescriptionData {
   id: string;
-  registration_number: number;
   created_at: string;
   updated_at: string;
   name: string;
