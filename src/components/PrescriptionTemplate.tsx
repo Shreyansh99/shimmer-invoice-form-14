@@ -196,6 +196,12 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
                       <span class="info-value">${prescriptionData.mobile_number}</span>
                     </div>
                   ` : ''}
+                  ${prescriptionData.room_number ? `
+                    <div class="info-item">
+                      <span class="info-label">Room No:</span>
+                      <span class="info-value">${prescriptionData.room_number}</span>
+                    </div>
+                  ` : ''}
                 </div>
                 
                 <div class="patient-right">
@@ -356,6 +362,13 @@ export const PrescriptionTemplate = ({ prescriptionData, onBack }: PrescriptionT
                     <div className="flex">
                       <span className="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Mobile:</span>
                       <span className="text-sm text-gray-900">{prescriptionData.mobile_number}</span>
+                    </div>
+                  )}
+                  
+                  {prescriptionData.room_number && (
+                    <div className="flex">
+                      <span className="text-sm font-medium text-gray-600 w-20 flex-shrink-0">Room No:</span>
+                      <span className="text-sm text-gray-900">{prescriptionData.room_number}</span>
                     </div>
                   )}
                 </div>
